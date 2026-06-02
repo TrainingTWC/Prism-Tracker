@@ -1,13 +1,39 @@
 # PROJECT_BRIEF.md: Prism Tracker
 
 **Last Updated:** June 2, 2026  
-**Status:** Phase 2 Complete (CSV Importer Functional) → Phase 3 Ready (Convex Auth)
+**Status:** Phase 3 Complete (Convex Auth wired) → Phase 5 Ready (Dashboards)
+
+---
+
+## 0. Ecosystem Context — Prism OS
+
+Prism Tracker is the **fourth app** in the Prism OS family for Third Wave
+Coffee. It must look and feel like a sibling of:
+
+| App | Accent | Verb | Question it answers |
+|---|---|---|---|
+| Prism Intelligence | Ember Emerald `#10b37d` | understand | *What do we know?* |
+| Prism Escalations | Tea Orange `#E07B39` | respond | *What needs attention?* |
+| Prism Learning | Ember Emerald `#10b37d` | grow | *How do we get better?* |
+| **Prism Tracker** | **Signal Blue `#3B82F6`** | **coordinate** | ***Where are we in the plan?*** |
+
+**Shared visual foundation across all four apps** (mandatory):
+- Obsidian dark canvas (`#09090B` base)
+- 100% JetBrains Mono typography
+- Glassmorphism panels with inset highlights
+- Uppercase `tracking-[0.12em]` labels everywhere
+- Sidebar = 256px sticky · Topbar = 56px sticky
+- Gradient wordmark: `Prism <Tracker>` with the second word in the accent gradient
+
+See [`docs/BRAND.md`](./docs/BRAND.md) for positioning and
+[`docs/DESIGN_SYSTEM.md`](./docs/DESIGN_SYSTEM.md) for the full visual spec.
 
 ---
 
 ## 1. Project Overview
 
-**Prism Tracker** is an end-to-end rollout management platform for TWC Coffee (7+ regional stores, 4+ concurrent initiatives: trials, launches, pilots, transitions). 
+**Prism Tracker** is the rollout-tracking surface of Prism OS for TWC Coffee
+(478 stores, 4+ concurrent initiatives: trials, launches, pilots, transitions). 
 
 **Problem:** No centralized visibility into rollout health, participation delays, blockers across regions.  
 **Solution:** Reactive database (Convex) syncing store × initiative matrix, auto-flagging delays with reasons, aggregating health (red/amber/green) across regions.
