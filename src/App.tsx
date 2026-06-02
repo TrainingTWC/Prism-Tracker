@@ -6,7 +6,7 @@ import React, { useState } from 'react';
 import { useAuthActions } from '@convex-dev/auth/react';
 import { useQuery } from 'convex/react';
 import { api } from '../convex/_generated/api';
-import { Activity } from 'lucide-react';
+
 
 import { AuthGate } from './components/AuthGate';
 import { AppShell } from './components/shell/AppShell';
@@ -63,18 +63,40 @@ const MainApp: React.FC = () => {
 
   if (user === undefined) {
     return (
-      <div
-        style={{
-          minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
-          background: '#09090B', color: '#A1A1AE', fontFamily: 'JetBrains Mono, monospace',
-        }}
-      >
-        <div style={{ textAlign: 'center' }}>
-          <Activity size={28} color="#3B82F6" className="animate-spin" />
-          <p style={{ fontSize: 11, letterSpacing: '0.16em', textTransform: 'uppercase', marginTop: 14, opacity: 0.6 }}>
-            Booting Prism Tracker…
-          </p>
+      <div style={{
+        minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
+        background: '#09090B', flexDirection: 'column', gap: 0,
+      }}>
+        {/* Ambient glow */}
+        <div style={{
+          position: 'fixed', top: '30%', left: '50%', transform: 'translate(-50%,-50%)',
+          width: 500, height: 500, borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(59,130,246,0.08) 0%, transparent 70%)',
+          pointerEvents: 'none',
+        }} />
+        <div style={{ textAlign: 'center', position: 'relative', zIndex: 1 }}>
+          {/* Logo tile */}
+          <div style={{
+            width: 56, height: 56, borderRadius: 14, margin: '0 auto 20px',
+            background: 'linear-gradient(135deg,#1D4ED8,#3B82F6,#60A5FA)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 0 40px rgba(59,130,246,0.35)',
+            fontSize: 24, fontWeight: 800, color: '#fff',
+            fontFamily: 'JetBrains Mono, monospace',
+          }}>P</div>
+          {/* Spinner bar */}
+          <div style={{ width: 160, height: 2, background: '#1C1C21', borderRadius: 2, margin: '0 auto 16px', overflow: 'hidden' }}>
+            <div style={{
+              height: '100%', width: '40%', background: 'linear-gradient(90deg,transparent,#3B82F6,transparent)',
+              borderRadius: 2, animation: 'prism-scan 1.4s ease-in-out infinite',
+            }} />
+          </div>
+          <p style={{
+            fontSize: 10, letterSpacing: '0.18em', textTransform: 'uppercase',
+            color: '#52525C', fontFamily: 'JetBrains Mono, monospace', margin: 0,
+          }}>Connecting to Prism OS</p>
         </div>
+        <style>{`@keyframes prism-scan{0%{transform:translateX(-200%)}100%{transform:translateX(500%)}}`}</style>
       </div>
     );
   }
