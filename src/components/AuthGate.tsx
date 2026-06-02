@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuthActions } from '@convex-dev/auth/react';
-import { LogIn, UserPlus } from 'lucide-react';
+import { Mail, Lock, ArrowRight, AlertCircle } from 'lucide-react';
 
 type AuthMode = 'signin' | 'signup';
 
@@ -16,121 +16,153 @@ export const AuthGate: React.FC = () => {
     e.preventDefault();
     setError('');
     setLoading(true);
-
     try {
-      const result = await signIn('password', {
+      const result: any = await signIn('password', {
         email,
         password,
         flow: mode === 'signup' ? 'signUp' : 'signIn',
       });
-      
-      if (!result.signingIn && result.redirect) {
+      if (result && !result.signingIn && result.redirect) {
         window.location.href = result.redirect.toString();
       }
     } catch (err: any) {
-      setError(err.message || 'Authentication failed');
+      setError(err?.message || 'Authentication failed');
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4">
-      <div className="max-w-md w-full bg-white rounded-2xl border border-gray-150 shadow-xl overflow-hidden">
-        <div className="p-8 text-center space-y-6">
-          {/* Header */}
-          <div className="space-y-2">
-            <h1 className="text-2xl font-black text-slate-900 tracking-tight">Prism Tracker</h1>
-            <p className="text-slate-500 text-sm">
-              {mode === 'signin' ? 'Sign in to your account' : 'Create a new account'}
-            </p>
-          </div>
+    <div
+      style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 16,
+        position: 'relative',
+        overflow: 'hidden',
+        background: 'var(--bg-primary)',
+      }}
+    >
+      <div className="ambient-signal" style={{ top: '15%', left: '50%', transform: 'translateX(-50%)' }} />
+      <div className="ambient-signal" style={{ bottom: '-10%', right: '-10%', width: 400, height: 400 }} />
 
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Email */}
+      <div style={{ width: '100%', maxWidth: 420, position: 'relative', zIndex: 1 }}>
+        <div style={{ textAlign: 'center', marginBottom: 32 }}>
+          <div
+            className="prism-icon-tile"
+            style={{ margin: '0 auto 18px', background: 'linear-gradient(135deg,#1D4ED8,#3B82F6,#60A5FA)', color: 'white', border: 'none', boxShadow: '0 0 32px rgba(59,130,246,0.4)' }}
+          >
+            <span style={{ fontSize: 22, fontWeight: 800 }}>P</span>
+          </div>
+          <p className="text-overline" style={{ margin: '0 0 6px' }}>Rollout tracking · Prism OS</p>
+          <h1
+            style={{
+              fontSize: 36,
+              fontWeight: 800,
+              letterSpacing: '-0.02em',
+              margin: 0,
+              color: 'var(--obsidian-50)',
+            }}
+          >
+            Prism <span className="text-gradient-signal">Tracker</span>
+          </h1>
+          <p style={{ marginTop: 8, fontSize: 12, color: 'var(--text-tertiary)' }}>
+            {mode === 'signin' ? 'Sign in to coordinate the estate.' : 'Create your operator account.'}
+          </p>
+        </div>
+
+        <div className="widget" style={{ padding: 32 }}>
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div>
-              <label htmlFor="email" className="block text-xs font-bold text-slate-600 mb-2 uppercase tracking-wider">
+              <label className="text-overline" style={{ display: 'block', marginBottom: 8 }}>
                 Email
               </label>
-              <input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@example.com"
-                className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                required
-                disabled={loading}
-              />
+              <div style={{ position: 'relative' }}>
+                <Mail size={14} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                <input
+                  className="prism-input"
+                  style={{ paddingLeft: 38 }}
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@thirdwavecoffee.in"
+                  required
+                  autoComplete="email"
+                />
+              </div>
             </div>
 
-            {/* Password */}
             <div>
-              <label htmlFor="password" className="block text-xs font-bold text-slate-600 mb-2 uppercase tracking-wider">
+              <label className="text-overline" style={{ display: 'block', marginBottom: 8 }}>
                 Password
               </label>
-              <input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                required
-                disabled={loading}
-              />
+              <div style={{ position: 'relative' }}>
+                <Lock size={14} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                <input
+                  className="prism-input"
+                  style={{ paddingLeft: 38 }}
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  required
+                  minLength={6}
+                  autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
+                />
+              </div>
             </div>
 
-            {/* Error */}
             {error && (
-              <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-xs text-red-700 font-medium">{error}</p>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: 10,
+                  padding: 12,
+                  borderRadius: 10,
+                  background: 'rgba(239,68,68,0.08)',
+                  border: '1px solid rgba(239,68,68,0.20)',
+                  color: '#FCA5A5',
+                  fontSize: 12,
+                }}
+              >
+                <AlertCircle size={14} style={{ flexShrink: 0, marginTop: 1 }} />
+                <span>{error}</span>
               </div>
             )}
 
-            {/* Submit Button */}
+            <button type="submit" className="btn-primary" disabled={loading} style={{ marginTop: 8, padding: 14 }}>
+              {loading ? 'Working…' : mode === 'signin' ? 'Sign in' : 'Create account'}
+              {!loading && <ArrowRight size={14} />}
+            </button>
+
             <button
-              type="submit"
-              disabled={loading}
-              className="w-full flex items-center justify-center gap-2 bg-blue-500 hover:bg-blue-600 disabled:bg-blue-300 text-white font-bold py-2.5 px-4 rounded-lg transition-colors cursor-pointer"
+              type="button"
+              onClick={() => { setMode(mode === 'signin' ? 'signup' : 'signin'); setError(''); }}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: 'var(--text-tertiary)',
+                fontSize: 11,
+                cursor: 'pointer',
+                marginTop: 4,
+                fontFamily: 'inherit',
+                textTransform: 'uppercase',
+                letterSpacing: '0.08em',
+              }}
             >
-              {mode === 'signin' ? (
-                <>
-                  <LogIn className="w-4 h-4" />
-                  Sign In
-                </>
-              ) : (
-                <>
-                  <UserPlus className="w-4 h-4" />
-                  Sign Up
-                </>
-              )}
+              {mode === 'signin' ? "Don't have an account? Sign up" : 'Already have an account? Sign in'}
             </button>
           </form>
-
-          {/* Toggle Mode */}
-          <div className="pt-4 border-t border-slate-100">
-            <p className="text-xs text-slate-500 mb-3">
-              {mode === 'signin' ? "Don't have an account?" : 'Already have an account?'}
-            </p>
-            <button
-              onClick={() => {
-                setMode(mode === 'signin' ? 'signup' : 'signin');
-                setError('');
-                setPassword('');
-              }}
-              className="text-xs font-bold text-blue-500 hover:text-blue-600 uppercase tracking-wider"
-              disabled={loading}
-            >
-              {mode === 'signin' ? 'Create Account' : 'Sign In'}
-            </button>
-          </div>
-
-          {/* Info */}
-          <p className="text-[10px] text-slate-400 mt-4">
-            Secure Convex authentication. No third-party login.
-          </p>
         </div>
+
+        <p
+          className="text-overline-muted"
+          style={{ textAlign: 'center', marginTop: 24, fontSize: 9 }}
+        >
+          Powered by Third Wave Coffee · Prism OS
+        </p>
       </div>
     </div>
   );
