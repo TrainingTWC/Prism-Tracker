@@ -42,7 +42,6 @@ export default defineSchema({
     .index("by_region", ["region"])
     .index("by_areaManager", ["areaManager"]),
 
-  // One per trial / launch / pilot / transition (a spreadsheet column).
   initiatives: defineTable({
     name: v.string(),
     type: v.union(
@@ -63,7 +62,7 @@ export default defineSchema({
     regions: v.array(v.string()),
     cities: v.array(v.string()),
     vendor: v.optional(v.string()),
-    plannedStart: v.number(),
+    plannedStart: v.optional(v.number()),
     plannedEnd: v.optional(v.number()),
     ownerEmail: v.optional(v.string()),
     notes: v.optional(v.string()),

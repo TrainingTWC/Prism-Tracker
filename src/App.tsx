@@ -10,6 +10,7 @@ import { ProjectList } from './components/ProjectList';
 import { TaskBoard } from './components/TaskBoard';
 import { TaskDetailModal } from './components/TaskDetailModal';
 import { SnagList } from './components/SnagList';
+import { SpreadsheetImporter } from './components/SpreadsheetImporter';
 import { Task } from './types';
 import { 
   BarChart4, 
@@ -22,10 +23,11 @@ import {
   User,
   Activity,
   FolderOpen,
-  Info
+  Info,
+  Upload
 } from 'lucide-react';
 
-type TabType = 'dashboard' | 'board' | 'snags';
+type TabType = 'dashboard' | 'board' | 'snags' | 'import';
 
 const MainApp: React.FC = () => {
   const { 
@@ -190,12 +192,24 @@ const MainApp: React.FC = () => {
                   <AlertOctagon className="w-3.5 h-3.5" />
                   Project Hurdles / Snags
                 </button>
+                <button
+                  onClick={() => setActiveTab('import')}
+                  className={`px-4 py-1.5 text-xs font-bold rounded-sm transition-all duration-150 cursor-pointer flex items-center gap-1.5 ${
+                    activeTab === 'import' 
+                      ? 'bg-slate-900 text-white shadow-xs' 
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  <Upload className="w-3.5 h-3.5" />
+                  Data Import
+                </button>
               </div>
 
               {/* Render Selected View */}
               {activeTab === 'dashboard' && <Dashboard />}
               {activeTab === 'board' && <TaskBoard onSelectTask={setSelectedTask} />}
               {activeTab === 'snags' && <SnagList />}
+              {activeTab === 'import' && <SpreadsheetImporter />}
             </>
           ) : (
             <div className="flex-1 flex flex-col items-center justify-center py-20 text-center max-w-md mx-auto space-y-4">
