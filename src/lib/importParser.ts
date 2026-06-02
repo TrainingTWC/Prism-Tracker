@@ -218,8 +218,8 @@ export function parseMatrix(csv: string): ParsedImport {
     initiatives.push({
       name: initName.split("\n")[0]?.trim() || initName,
       type,
-      plannedStart,
-      plannedEnd,
+      ...(plannedStart !== null && { plannedStart }),
+      ...(plannedEnd !== null && { plannedEnd }),
       variants: variants.length > 0 ? variants : [],
       regions: regions.length > 0 ? regions : ["All"],
     });

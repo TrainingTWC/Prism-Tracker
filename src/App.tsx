@@ -41,6 +41,10 @@ const MainApp: React.FC = () => {
 
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  
+  // Dev mode: allow access to importer without Firebase auth
+  const isDev = import.meta.env.DEV && new URLSearchParams(window.location.search).has('dev');
+  const devUser = isDev ? { displayName: 'Dev Mode', email: 'dev@local' } : null;
 
   if (loadingAuth) {
     return (
@@ -54,7 +58,7 @@ const MainApp: React.FC = () => {
   }
 
   // Not logged in: Beautiful landing portal explaining features
-  if (!user) {
+  if (!user && !isDev) {
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4">
         <div className="max-w-md w-full bg-white rounded-2xl border border-gray-150 shadow-xl overflow-hidden">
@@ -133,65 +137,73 @@ const MainApp: React.FC = () => {
         <div className="flex items-center gap-6">
           <div className="hidden md:block text-right">
             <div className="text-[9px] text-slate-400 uppercase font-black tracking-widest">Operator Session</div>
-            <div className="text-xs text-slate-600 font-mono font-medium">{user.displayName || user.email?.split('@')[0]}</div>
+            <div className="text-xs text-slate-600 font-mono font-medium">{isDev ? 'DEV' : (user?.displayName || user?.email?.split('@')[0])}</div>
           </div>
 
-          <button
-            onClick={logout}
-            className="p-2 bg-slate-50 border border-slate-200 text-slate-600 hover:bg-slate-900 hover:text-white hover:border-slate-900 transition-colors rounded-sm cursor-pointer"
-            title="Sign out from sandbox"
-          >
-            <LogOut className="w-4 h-4" />
-          </button>
+          {!isDev && (
+            <button
+              onClick={logout}
+              className="p-2 bg-slate-50 border border-slate-200 text-slate-600 hover:bg-slate-900 hover:text-white hover:border-slate-900 transition-colors rounded-sm cursor-pointer"
+              title="Sign out from sandbox"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
+          )}
         </div>
       </header>
 
       {/* Main Workspace Frame */}
       <main className="flex-1 flex flex-col md:flex-row overflow-hidden">
-        {/* Left section: Sidebar projects picker */}
-        <aside className="w-full md:w-[310px] bg-white border-b md:border-b-0 md:border-r border-slate-200 p-6 overflow-y-auto shrink-0 md:max-h-[calc(100vh-64px)]">
-          <ProjectList />
-        </aside>
+        {/* Left section: Sidebar projects picker - hidden in dev mode */}
+        {!isDev && (
+          <aside className="w-full md:w-[310px] bg-white border-b md:border-b-0 md:border-r border-slate-200 p-6 overflow-y-auto shrink-0 md:max-h-[calc(100vh-64px)]">
+            <ProjectList />
+          </aside>
+        )}
 
         {/* Right Section: Workspace dashboard tabs */}
         <section className="flex-1 flex flex-col overflow-y-auto p-6 space-y-6 md:max-h-[calc(100vh-64px)] bg-slate-50/40">
-          {activeProject ? (
+          {activeProject || isDev ? (
             <>
               {/* Tabs selector */}
               <div className="flex p-1 bg-slate-100 rounded-sm border border-slate-200 self-start">
-                <button
-                  onClick={() => setActiveTab('dashboard')}
-                  className={`px-4 py-1.5 text-xs font-bold rounded-sm transition-all duration-150 cursor-pointer flex items-center gap-1.5 ${
-                    activeTab === 'dashboard' 
-                      ? 'bg-slate-900 text-white shadow-xs' 
-                      : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  <BarChart4 className="w-3.5 h-3.5" />
-                  Performance Summary
-                </button>
-                <button
-                  onClick={() => setActiveTab('board')}
-                  className={`px-4 py-1.5 text-xs font-bold rounded-sm transition-all duration-150 cursor-pointer flex items-center gap-1.5 ${
-                    activeTab === 'board' 
-                      ? 'bg-slate-900 text-white shadow-xs' 
-                      : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  <ClipboardList className="w-3.5 h-3.5" />
-                  Timeline Board
-                </button>
-                <button
-                  onClick={() => setActiveTab('snags')}
-                  className={`px-4 py-1.5 text-xs font-bold rounded-sm transition-all duration-150 cursor-pointer flex items-center gap-1.5 ${
-                    activeTab === 'snags' 
-                      ? 'bg-slate-900 text-white shadow-xs' 
-                      : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  <AlertOctagon className="w-3.5 h-3.5" />
-                  Project Hurdles / Snags
-                </button>
+                {!isDev && (
+                  <>
+                    <button
+                      onClick={() => setActiveTab('dashboard')}
+                      className={`px-4 py-1.5 text-xs font-bold rounded-sm transition-all duration-150 cursor-pointer flex items-center gap-1.5 ${
+                        activeTab === 'dashboard' 
+                          ? 'bg-slate-900 text-white shadow-xs' 
+                          : 'text-slate-600 hover:text-slate-900'
+                      }`}
+                    >
+                      <BarChart4 className="w-3.5 h-3.5" />
+                      Performance Summary
+                    </button>
+                    <button
+                      onClick={() => setActiveTab('board')}
+                      className={`px-4 py-1.5 text-xs font-bold rounded-sm transition-all duration-150 cursor-pointer flex items-center gap-1.5 ${
+                        activeTab === 'board' 
+                          ? 'bg-slate-900 text-white shadow-xs' 
+                          : 'text-slate-600 hover:text-slate-900'
+                      }`}
+                    >
+                      <ClipboardList className="w-3.5 h-3.5" />
+                      Timeline Board
+                    </button>
+                    <button
+                      onClick={() => setActiveTab('snags')}
+                      className={`px-4 py-1.5 text-xs font-bold rounded-sm transition-all duration-150 cursor-pointer flex items-center gap-1.5 ${
+                        activeTab === 'snags' 
+                          ? 'bg-slate-900 text-white shadow-xs' 
+                          : 'text-slate-600 hover:text-slate-900'
+                      }`}
+                    >
+                      <AlertOctagon className="w-3.5 h-3.5" />
+                      Project Hurdles / Snags
+                    </button>
+                  </>
+                )}
                 <button
                   onClick={() => setActiveTab('import')}
                   className={`px-4 py-1.5 text-xs font-bold rounded-sm transition-all duration-150 cursor-pointer flex items-center gap-1.5 ${
@@ -206,9 +218,9 @@ const MainApp: React.FC = () => {
               </div>
 
               {/* Render Selected View */}
-              {activeTab === 'dashboard' && <Dashboard />}
-              {activeTab === 'board' && <TaskBoard onSelectTask={setSelectedTask} />}
-              {activeTab === 'snags' && <SnagList />}
+              {!isDev && activeTab === 'dashboard' && <Dashboard />}
+              {!isDev && activeTab === 'board' && <TaskBoard onSelectTask={setSelectedTask} />}
+              {!isDev && activeTab === 'snags' && <SnagList />}
               {activeTab === 'import' && <SpreadsheetImporter />}
             </>
           ) : (
