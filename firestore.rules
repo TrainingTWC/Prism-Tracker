@@ -1,0 +1,131 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Default-deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Reusable, hardened global security helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerified() {
+      return isSignedIn() && (request.auth.token.email_verified == true || request.auth.token.email != null);
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function getProject(projectId) {
+      return get(/databases/$(database)/documents/projects/$(projectId)).data;
+    }
+
+    function isProjectMember(projectId) {
+      return isSignedIn() && (
+        getProject(projectId).ownerId == request.auth.uid || 
+        request.auth.token.email in getProject(projectId).memberEmails
+      );
+    }
+    
+    function isProjectOwner(projectId) {
+      return isSignedIn() && getProject(projectId).ownerId == request.auth.uid;
+    }
+
+    // --- PROJECTS COLLECTION ---
+    match /projects/{projectId} {
+      function isValidProject(data) {
+        return data.name is string && data.name.size() > 0 && data.name.size() <= 100
+            && data.description is string && data.description.size() <= 2000
+            && data.projectUrl is string && data.projectUrl.size() <= 1000
+            && data.ownerId == request.auth.uid
+            && data.ownerEmail is string
+            && data.memberEmails is list 
+            && data.memberEmails.size() <= 10;
+      }
+
+      allow show, get: if isSignedIn() && (resource.data.ownerId == request.auth.uid || request.auth.token.email in resource.data.memberEmails);
+      allow list: if isSignedIn(); // Restricted list access; client queries must filter on owner or member
+
+      allow create: if isVerified() && isValidId(projectId) && isValidProject(request.resource.data)
+                    && request.resource.data.createdAt == request.time
+                    && request.resource.data.updatedAt == request.time;
+
+      allow update: if isVerified() && isValidId(projectId) && isValidProject(request.resource.data)
+                    && request.resource.data.updatedAt == request.time
+                    && resource.data.ownerId == request.auth.uid
+                    && request.resource.data.ownerId == resource.data.ownerId
+                    && request.resource.data.createdAt == resource.data.createdAt;
+
+      allow delete: if isVerified() && resource.data.ownerId == request.auth.uid;
+    }
+
+    // --- TASKS SUBCOLLECTION ---
+    match /projects/{projectId}/tasks/{taskId} {
+      function isValidTask(data) {
+        return data.title is string && data.title.size() > 0 && data.title.size() <= 120
+            && data.details is string && data.details.size() <= 5000
+            && data.status in ['todo', 'in_progress', 'review', 'completed']
+            && data.priority in ['low', 'medium', 'high', 'critical']
+            && data.assignedTo is string && data.assignedTo.size() <= 100
+            && data.timelineStart is string && data.timelineStart.size() <= 20
+            && data.timelineEnd is string && data.timelineEnd.size() <= 20
+            && data.snagsCount is number
+            && data.attachments is list && data.attachments.size() <= 10;
+      }
+
+      allow get, list: if isProjectMember(projectId);
+
+      allow create: if isVerified() && isValidId(taskId) && isProjectMember(projectId) && isValidTask(request.resource.data)
+                    && request.resource.data.createdAt == request.time
+                    && request.resource.data.updatedAt == request.time;
+
+      allow update: if isVerified() && isValidId(taskId) && isProjectMember(projectId) && isValidTask(request.resource.data)
+                    && request.resource.data.updatedAt == request.time
+                    && request.resource.data.createdAt == resource.data.createdAt;
+
+      allow delete: if isVerified() && isProjectOwner(projectId);
+    }
+
+    // --- COMMENTS SUBCOLLECTION ---
+    match /projects/{projectId}/tasks/{taskId}/comments/{commentId} {
+      function isValidComment(data) {
+        return data.text is string && data.text.size() > 0 && data.text.size() <= 2000
+            && data.author is string && data.author.size() <= 100
+            && data.authorUid == request.auth.uid;
+      }
+
+      allow get, list: if isProjectMember(projectId);
+      
+      allow create: if isVerified() && isValidId(commentId) && isProjectMember(projectId) && isValidComment(request.resource.data)
+                    && request.resource.data.createdAt == request.time;
+      
+      allow delete: if isVerified() && isProjectMember(projectId) && (resource.data.authorUid == request.auth.uid || isProjectOwner(projectId));
+    }
+
+    // --- SNAGS SUBCOLLECTION ---
+    match /projects/{projectId}/snags/{snagId} {
+      function isValidSnag(data) {
+        return data.description is string && data.description.size() > 0 && data.description.size() <= 1000
+            && data.status in ['open', 'resolved']
+            && data.priority in ['low', 'medium', 'high']
+            && data.assignedTo is string && data.assignedTo.size() <= 100;
+      }
+
+      allow get, list: if isProjectMember(projectId);
+
+      allow create: if isVerified() && isValidId(snagId) && isProjectMember(projectId) && isValidSnag(request.resource.data)
+                    && request.resource.data.createdAt == request.time
+                    && request.resource.data.updatedAt == request.time;
+
+      allow update: if isVerified() && isValidId(snagId) && isProjectMember(projectId) && isValidSnag(request.resource.data)
+                    && request.resource.data.updatedAt == request.time
+                    && request.resource.data.createdAt == resource.data.createdAt;
+
+      allow delete: if isVerified() && isProjectOwner(projectId);
+    }
+  }
+}

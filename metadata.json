@@ -1,0 +1,6 @@
+{
+  "name": "Prism Tracker",
+  "description": "An end-to-end, automated rollout tracker for new launches, trials, pilots, and transitions across retail stores. Tracks store participation, auto-flags delays with reasons, rolls up health by region and initiative, and surfaces timelines and AI status summaries.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

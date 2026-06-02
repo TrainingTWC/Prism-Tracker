@@ -1,0 +1,196 @@
+{
+  "entities": {
+    "Project": {
+      "title": "Project",
+      "description": "A collaborative project containing tasks, timelines, project URLs, and metadata.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Unique names for tracking projects."
+        },
+        "description": {
+          "type": "string",
+          "description": "Detailed explanation of the project."
+        },
+        "projectUrl": {
+          "type": "string",
+          "description": "Target project web link or repository."
+        },
+        "ownerId": {
+          "type": "string",
+          "description": "UID of the creator."
+        },
+        "ownerEmail": {
+          "type": "string",
+          "description": "Email of the creator."
+        },
+        "memberEmails": {
+          "type": "array",
+          "description": "List of the 5 allowed collaborative teammate emails."
+        },
+        "createdAt": {
+          "type": "object",
+          "format": "timestamp",
+          "description": "Server timestamp of project creation."
+        },
+        "updatedAt": {
+          "type": "object",
+          "format": "timestamp",
+          "description": "Server timestamp of last edit."
+        }
+      },
+      "required": ["name", "description", "ownerId", "ownerEmail", "memberEmails", "createdAt", "updatedAt"]
+    },
+    "Task": {
+      "title": "Task",
+      "description": "An action item or activity belonging to a specific project with status, timeline, priority, and assignees.",
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Brief summary of the work."
+        },
+        "details": {
+          "type": "string",
+          "description": "Detailed requirements for the task."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["todo", "in_progress", "review", "completed"],
+          "description": "Workflow phase."
+        },
+        "priority": {
+          "type": "string",
+          "enum": ["low", "medium", "high", "critical"],
+          "description": "Importance modifier."
+        },
+        "assignedTo": {
+          "type": "string",
+          "description": "Email of the task assignee from the 5 teammates."
+        },
+        "timelineStart": {
+          "type": "string",
+          "format": "date",
+          "description": "Date when work starts (YYYY-MM-DD)."
+        },
+        "timelineEnd": {
+          "type": "string",
+          "format": "date",
+          "description": "Deadline for completion (YYYY-MM-DD)."
+        },
+        "snagsCount": {
+          "type": "number",
+          "description": "Count of unresolved issues or blockers."
+        },
+        "attachments": {
+          "type": "array",
+          "description": "Array of files or assets uploaded by team members."
+        },
+        "createdAt": {
+          "type": "object",
+          "format": "timestamp",
+          "description": "Server timestamp of task creation."
+        },
+        "updatedAt": {
+          "type": "object",
+          "format": "timestamp",
+          "description": "Server timestamp of last task update."
+        }
+      },
+      "required": ["title", "details", "status", "priority", "assignedTo", "timelineStart", "timelineEnd", "createdAt", "updatedAt"]
+    },
+    "Comment": {
+      "title": "Comment",
+      "description": "A collaborative message posted in a task's thread.",
+      "type": "object",
+      "properties": {
+        "text": {
+          "type": "string",
+          "description": "Content of the comment."
+        },
+        "author": {
+          "type": "string",
+          "description": "Teammate name or email who wrote it."
+        },
+        "authorUid": {
+          "type": "string",
+          "description": "UID of the author."
+        },
+        "createdAt": {
+          "type": "object",
+          "format": "timestamp",
+          "description": "Server timestamp of the comment."
+        }
+      },
+      "required": ["text", "author", "authorUid", "createdAt"]
+    },
+    "Snag": {
+      "title": "Snag",
+      "description": "A snag, issue, or blocker preventing project progress.",
+      "type": "object",
+      "properties": {
+        "description": {
+          "type": "string",
+          "description": "Explanation of the snag or blocker."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["open", "resolved"],
+          "description": "Whether the snag is open or solved."
+        },
+        "priority": {
+          "type": "string",
+          "enum": ["low", "medium", "high"],
+          "description": "Snag urgency."
+        },
+        "taskId": {
+          "type": "string",
+          "description": "Optional linked task ID."
+        },
+        "assignedTo": {
+          "type": "string",
+          "description": "Email of the teammate assigned to investigate."
+        },
+        "createdAt": {
+          "type": "object",
+          "format": "timestamp",
+          "description": "Server timestamp when raised."
+        },
+        "updatedAt": {
+          "type": "object",
+          "format": "timestamp",
+          "description": "Server timestamp when modified."
+        },
+        "resolvedAt": {
+          "type": "object",
+          "format": "timestamp",
+          "description": "Server timestamp of resolution."
+        },
+        "resolvedBy": {
+          "type": "string",
+          "description": "Email of resolver."
+        }
+      },
+      "required": ["description", "status", "priority", "assignedTo", "createdAt", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "projects": {
+      "schema": "Project",
+      "description": "Active projects in the workspace."
+    },
+    "projects/{projectId}/tasks": {
+      "schema": "Task",
+      "description": "Subcollection of tasks for a given project."
+    },
+    "projects/{projectId}/tasks/{taskId}/comments": {
+      "schema": "Comment",
+      "description": "Subcollection of comments mapping to a specific task."
+    },
+    "projects/{projectId}/snags": {
+      "schema": "Snag",
+      "description": "Subcollection of blockers and snags related to the project."
+    }
+  }
+}
