@@ -5,6 +5,7 @@ import {
   Sparkles, Truck,
   AlertTriangle, Clock, Bell, Users,
   Upload, Download, FileText, Settings,
+  Home,
 } from 'lucide-react';
 import type { ViewId } from '../../App';
 
@@ -16,6 +17,12 @@ interface SidebarProps {
 }
 
 const SECTIONS: { label: string; items: { id: ViewId; label: string; icon: any }[] }[] = [
+  {
+    label: 'Overview',
+    items: [
+      { id: 'home', label: 'Home', icon: Home },
+    ],
+  },
   {
     label: 'Rollouts',
     items: [

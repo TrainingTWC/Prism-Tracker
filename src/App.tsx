@@ -14,6 +14,7 @@ import { Sidebar } from './components/shell/Sidebar';
 import { Topbar } from './components/shell/Topbar';
 import { useTrackerData } from './lib/useTrackerData';
 
+import { HomeView } from './views/HomeView';
 import { DashboardView } from './views/DashboardView';
 import { GridView } from './views/GridView';
 import { TimelineView } from './views/TimelineView';
@@ -35,7 +36,7 @@ import { AuditView } from './views/AuditView';
 import { SettingsView } from './views/SettingsView';
 
 export type ViewId =
-  | 'dashboard' | 'grid' | 'timeline' | 'calendar' | 'map'
+  | 'home' | 'dashboard' | 'grid' | 'timeline' | 'calendar' | 'map'
   | 'stores' | 'store-profile' | 'equipment'
   | 'initiatives' | 'initiative-page' | 'vendors'
   | 'snags' | 'delays' | 'alerts' | 'managers'
@@ -48,7 +49,7 @@ interface ViewParams {
 }
 
 const ROUTE_MAP: Record<string, ViewId> = {
-  '/': 'dashboard', '/grid': 'grid', '/timeline': 'timeline',
+  '/': 'home', '/dashboard': 'dashboard', '/grid': 'grid', '/timeline': 'timeline',
   '/calendar': 'calendar', '/map': 'map', '/stores': 'stores',
   '/equipment': 'equipment', '/initiatives': 'initiatives',
   '/vendors': 'vendors', '/snags': 'snags', '/delays': 'delays',
@@ -56,7 +57,7 @@ const ROUTE_MAP: Record<string, ViewId> = {
   '/export': 'export', '/audit': 'audit', '/settings': 'settings',
 };
 const VIEW_PATH: Record<ViewId, string> = {
-  dashboard: '/', grid: '/grid', timeline: '/timeline', calendar: '/calendar',
+  home: '/', dashboard: '/dashboard', grid: '/grid', timeline: '/timeline', calendar: '/calendar',
   map: '/map', stores: '/stores', 'store-profile': '/stores', equipment: '/equipment',
   initiatives: '/initiatives', 'initiative-page': '/initiatives', vendors: '/vendors',
   snags: '/snags', delays: '/delays', alerts: '/alerts', managers: '/managers',
@@ -71,7 +72,7 @@ function parseLocation(): { view: ViewId; params: ViewParams } {
   // /store/:id
   const storeMatch = path.match(/^\/store\/(.+)$/);
   if (storeMatch) return { view: 'store-profile', params: { storeId: storeMatch[1] } };
-  const view = ROUTE_MAP[path] ?? 'dashboard';
+  const view = ROUTE_MAP[path] ?? 'home';
   return { view, params: {} };
 }
 
@@ -145,7 +146,8 @@ const MainApp: React.FC = () => {
 
   const renderView = () => {
     switch (view) {
-      case 'dashboard': return <DashboardView onNavigate={navigate} />;
+      case 'home': return <HomeView onNavigate={navigate} />;
+      case 'dashboard': return <DashboardView />;
       case 'grid': return <GridView search={search} />;
       case 'timeline': return <TimelineView />;
       case 'calendar': return <CalendarView />;
@@ -164,7 +166,7 @@ const MainApp: React.FC = () => {
       case 'export': return <ExportView />;
       case 'audit': return <AuditView />;
       case 'settings': return <SettingsView user={user} onSignOut={handleSignOut} />;
-      default: return <DashboardView />;
+      default: return <HomeView onNavigate={navigate} />;
     }
   };
 

@@ -5,24 +5,12 @@ import { HEALTH_COLOR, DELAY_CATEGORY_COLOR, fmtRelative, pct } from '../lib/hea
 import {
   Activity, TrendingUp, AlertTriangle, ShieldCheck, Clock, MapPin,
   Wrench, Coffee, Store as StoreIcon,
-  LayoutGrid, Target, CalendarDays, Map, Bug,
-} from 'lucide-react';
-import type { ViewId } from '../App';
-import {
+} from 'lucide-react';import {
   ResponsiveContainer, PieChart, Pie, Cell, Tooltip,
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
 } from 'recharts';
 
-const FEATURE_CARDS: { icon: React.ReactNode; title: string; desc: string; view: ViewId }[] = [
-  { icon: <StoreIcon size={22} />, title: 'STORES', desc: 'Manage store profiles, assignments, and rollout participation across the estate.', view: 'stores' },
-  { icon: <Target size={22} />, title: 'INITIATIVES', desc: 'Create and coordinate rollout initiatives across all participating stores.', view: 'initiatives' },
-  { icon: <LayoutGrid size={22} />, title: 'GRID VIEW', desc: 'Flat-table view of every rollout cell with live health, status and filters.', view: 'grid' },
-  { icon: <CalendarDays size={22} />, title: 'TIMELINE', desc: 'Gantt-style timeline of initiatives and key milestones across the rollout.', view: 'timeline' },
-  { icon: <Map size={22} />, title: 'MAP VIEW', desc: 'Geographic heatmap of rollout health and store density across regions.', view: 'map' },
-  { icon: <AlertTriangle size={22} />, title: 'SNAGS', desc: 'Surface issues, blockers, and delays — track resolution across rollouts.', view: 'snags' },
-];
-
-export const DashboardView: React.FC<{ onNavigate?: (view: ViewId) => void }> = ({ onNavigate }) => {
+export const DashboardView: React.FC = () => {
   const { loading, rollouts, stores, initiatives, kpis } = useTrackerData();
 
   if (loading) return <LoadingPanel />;
@@ -67,65 +55,6 @@ export const DashboardView: React.FC<{ onNavigate?: (view: ViewId) => void }> = 
 
   return (
     <>
-      {/* ── PRISM TRACKER HERO ── */}
-      <div style={{ marginBottom: 48, paddingBottom: 40, borderBottom: '1px solid var(--border-subtle)' }}>
-        <p style={{
-          fontSize: 10, letterSpacing: '0.22em', textTransform: 'uppercase',
-          color: '#3B82F6', fontFamily: 'JetBrains Mono, monospace',
-          margin: '0 0 12px', fontWeight: 600,
-        }}>ROLLOUT OS</p>
-        <h1 style={{ fontSize: 88, fontWeight: 900, lineHeight: 0.95, margin: '0 0 20px', letterSpacing: '-0.01em' }}>
-          <span style={{ color: '#F4F4F5', display: 'block' }}>PRISM</span>
-          <span style={{ color: '#3B82F6', display: 'block' }}>TRACKER</span>
-        </h1>
-        <p style={{ fontSize: 15, color: '#71717A', maxWidth: 560, lineHeight: 1.6, margin: '0 0 32px' }}>
-          Track store rollouts, manage initiatives, surface delays, and coordinate the estate from one command centre.
-        </p>
-
-        {/* Feature launch cards */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-          gap: 14,
-        }}>
-          {FEATURE_CARDS.map((card) => (
-            <button
-              key={card.view}
-              onClick={() => onNavigate?.(card.view)}
-              style={{
-                textAlign: 'left', cursor: 'pointer', padding: 20,
-                background: '#111116', border: '1px solid #1C1C21',
-                borderRadius: 16, transition: 'border-color 0.15s, background 0.15s',
-                display: 'flex', flexDirection: 'column', gap: 0,
-              }}
-              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = '#3B82F6'; (e.currentTarget as HTMLElement).style.background = '#14141A'; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = '#1C1C21'; (e.currentTarget as HTMLElement).style.background = '#111116'; }}
-            >
-              <div style={{
-                width: 44, height: 44, borderRadius: 12, marginBottom: 16,
-                background: 'rgba(59,130,246,0.12)', border: '1px solid rgba(59,130,246,0.20)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: '#3B82F6',
-              }}>
-                {card.icon}
-              </div>
-              <p style={{
-                fontSize: 11, fontWeight: 700, letterSpacing: '0.12em',
-                textTransform: 'uppercase', color: '#F4F4F5',
-                fontFamily: 'JetBrains Mono, monospace', margin: '0 0 8px',
-              }}>{card.title}</p>
-              <p style={{ fontSize: 11, color: '#52525C', lineHeight: 1.55, margin: '0 0 16px', flexGrow: 1 }}>{card.desc}</p>
-              <span style={{
-                fontSize: 10, fontWeight: 700, letterSpacing: '0.1em',
-                textTransform: 'uppercase', color: '#3B82F6',
-                fontFamily: 'JetBrains Mono, monospace',
-              }}>OPEN ›</span>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* ── LIVE DATA DASHBOARD ── */}
       <PageHeader
         overline="Rollouts · Overview"
         title="Live initiatives"
