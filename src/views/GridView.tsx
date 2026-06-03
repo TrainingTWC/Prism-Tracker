@@ -1,9 +1,11 @@
 import React, { useMemo, useState } from 'react';
+import { useMutation, useQuery } from 'convex/react';
+import { api } from '../../convex/_generated/api';
 import { useTrackerData } from '../lib/useTrackerData';
 import { PageHeader, Panel, HealthPill, EmptyState } from '../components/shell/PageHeader';
 import { LoadingPanel } from './DashboardView';
-import { HEALTH_COLOR, STATUS_LABEL, fmtDate } from '../lib/health';
-import { Grid3x3, X, Calendar, User as UserIcon, AlertTriangle } from 'lucide-react';
+import { HEALTH_COLOR, STATUS_LABEL, DELAY_CATEGORY_COLOR, fmtDate } from '../lib/health';
+import { Grid3x3, X, User as UserIcon, AlertTriangle, CheckCircle, Zap, ChevronDown } from 'lucide-react';
 
 export const GridView: React.FC<{ search?: string }> = ({ search = '' }) => {
   const { loading, rollouts, stores, initiatives } = useTrackerData();
@@ -145,7 +147,11 @@ export const GridView: React.FC<{ search?: string }> = ({ search = '' }) => {
 
       {/* Drawer */}
       {selectedCell && (
-        <Drawer cell={selectedCell} onClose={() => setSelectedCell(null)} />
+        <Drawer
+          cell={selectedCell}
+          onClose={() => setSelectedCell(null)}
+          onUpdated={(updated) => setSelectedCell(updated)}
+        />
       )}
     </>
   );
@@ -178,69 +184,229 @@ const Select: React.FC<{ label: string; value: string; onChange: (v: string) => 
   </label>
 );
 
-const Drawer: React.FC<{ cell: any; onClose: () => void }> = ({ cell, onClose }) => (
-  <div
-    style={{
-      position: 'fixed', top: 0, right: 0, bottom: 0, width: 420, zIndex: 50,
-      background: 'var(--glass-bg)',
-      backdropFilter: 'blur(20px) saturate(1.3)',
-      borderLeft: '1px solid var(--glass-border)',
-      boxShadow: '-12px 0 48px rgba(0,0,0,0.6)',
-      padding: 28,
-      overflowY: 'auto',
-    }}
-  >
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 18 }}>
-      <div>
-        <p className="text-overline" style={{ margin: '0 0 4px' }}>Rollout · Detail</p>
-        <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--obsidian-50)', margin: 0 }}>
-          {cell.store.storeCode} <span style={{ color: 'var(--text-muted)' }}>×</span> {cell.initiative.name}
-        </h2>
-        <p style={{ fontSize: 11, color: 'var(--text-tertiary)', margin: '4px 0 0' }}>
-          {cell.store.storeName} · {cell.store.city}
-        </p>
-      </div>
-      <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
-    </div>
+const DELAY_CATS = [
+  { key: 'equipment', label: 'Equipment not installed' },
+  { key: 'supply', label: 'Supply / ingredient shortage' },
+  { key: 'vendor', label: 'Vendor / supplier delay' },
+  { key: 'staffing', label: 'Staffing / training gap' },
+  { key: 'store_ops', label: 'Store operations issue' },
+  { key: 'approval', label: 'Pending approval / sign-off' },
+  { key: 'logistics', label: 'Logistics / delivery' },
+  { key: 'recipe', label: 'Recipe / quality rework' },
+  { key: 'other', label: 'Other' },
+];
 
-    <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
-      <HealthPill health={cell.health} />
-      <span className="badge-pill" style={{ background: 'rgba(255,255,255,0.04)', color: 'var(--text-secondary)' }}>
-        {STATUS_LABEL[cell.status] || cell.status}
-      </span>
-    </div>
+const STATUS_ACTIONS = [
+  { value: 'in_progress', label: 'Active', color: '#3B82F6' },
+  { value: 'live', label: 'Live', color: '#22C55E' },
+  { value: 'completed', label: 'Done', color: '#22C55E' },
+  { value: 'dropped', label: 'Drop', color: '#EF4444' },
+] as const;
 
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 20 }}>
-      <DateBlock label="Planned start" value={fmtDate(cell.plannedStart)} />
-      <DateBlock label="Planned end" value={fmtDate(cell.plannedEnd)} />
-      <DateBlock label="Actual start" value={fmtDate(cell.actualStart)} />
-      <DateBlock label="Actual end" value={fmtDate(cell.actualEnd)} />
-    </div>
+const Drawer: React.FC<{ cell: any; onClose: () => void; onUpdated: (updated: any) => void }> = ({ cell, onClose, onUpdated }) => {
+  const setStatus = useMutation(api.rollouts.setStatus);
+  const reportDelay = useMutation(api.rollouts.reportDelay);
 
-    {cell.isDelayed && (
-      <div style={{ padding: 14, borderRadius: 12, background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.20)', marginBottom: 16 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-          <AlertTriangle size={14} color="#EF4444" />
-          <span className="text-overline" style={{ color: '#FCA5A5' }}>Delay</span>
+  const [showDelayForm, setShowDelayForm] = useState(false);
+  const [delayCat, setDelayCat] = useState(cell.delayCategory || 'equipment');
+  const [delayReason, setDelayReason] = useState(cell.delayReason || '');
+  const [saving, setSaving] = useState(false);
+
+  const handleSetStatus = async (status: string) => {
+    setSaving(true);
+    try {
+      await setStatus({ id: cell._id, status: status as any });
+      onUpdated({ ...cell, status });
+    } finally { setSaving(false); }
+  };
+
+  const handleReportDelay = async () => {
+    if (!delayReason.trim()) return;
+    setSaving(true);
+    try {
+      await reportDelay({ id: cell._id, delayCategory: delayCat, delayReason: delayReason.trim() });
+      onUpdated({ ...cell, status: 'delayed', isDelayed: true, delayCategory: delayCat, delayReason: delayReason.trim(), health: 'red' });
+      setShowDelayForm(false);
+    } finally { setSaving(false); }
+  };
+
+  const handleClearDelay = async () => {
+    setSaving(true);
+    try {
+      await setStatus({ id: cell._id, status: 'in_progress' });
+      onUpdated({ ...cell, status: 'in_progress', isDelayed: false, health: 'green' });
+    } finally { setSaving(false); }
+  };
+
+  return (
+    <div
+      style={{
+        position: 'fixed', top: 0, right: 0, bottom: 0, width: 440, zIndex: 50,
+        background: 'var(--glass-bg)',
+        backdropFilter: 'blur(20px) saturate(1.3)',
+        borderLeft: '1px solid var(--glass-border)',
+        boxShadow: '-12px 0 48px rgba(0,0,0,0.6)',
+        padding: 28,
+        overflowY: 'auto',
+      }}
+    >
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 18 }}>
+        <div>
+          <p className="text-overline" style={{ margin: '0 0 4px' }}>Rollout · Detail</p>
+          <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--obsidian-50)', margin: 0 }}>
+            {cell.store.storeCode} <span style={{ color: 'var(--text-muted)' }}>×</span> {cell.initiative.name}
+          </h2>
+          <p style={{ fontSize: 11, color: 'var(--text-tertiary)', margin: '4px 0 0' }}>
+            {cell.store.storeName} · {cell.store.city}
+          </p>
         </div>
-        <p style={{ fontSize: 12, color: 'var(--text-primary)', margin: '0 0 6px' }}>
-          {cell.delayDays}d overdue · {cell.delayCategory || 'other'}
-        </p>
-        {cell.delayReason && (
-          <p style={{ fontSize: 11, color: 'var(--text-tertiary)', margin: 0 }}>{cell.delayReason}</p>
+        <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
+      </div>
+
+      {/* Health + status */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
+        <HealthPill health={cell.health} />
+        <span className="badge-pill" style={{ background: 'rgba(255,255,255,0.04)', color: 'var(--text-secondary)' }}>
+          {STATUS_LABEL[cell.status] || cell.status}
+        </span>
+      </div>
+
+      {/* Dates */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 20 }}>
+        <DateBlock label="Planned start" value={fmtDate(cell.plannedStart)} />
+        <DateBlock label="Planned end" value={fmtDate(cell.plannedEnd)} />
+        <DateBlock label="Actual start" value={fmtDate(cell.actualStart)} />
+        <DateBlock label="Actual end" value={fmtDate(cell.actualEnd)} />
+      </div>
+
+      {/* Existing delay info */}
+      {cell.isDelayed && (
+        <div style={{ padding: 14, borderRadius: 12, background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.20)', marginBottom: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <AlertTriangle size={14} color="#EF4444" />
+              <span className="text-overline" style={{ color: '#FCA5A5' }}>
+                {cell.delayDays ? `${cell.delayDays}d overdue` : 'Delayed'} · {cell.delayCategory || 'other'}
+              </span>
+            </div>
+            <button
+              onClick={handleClearDelay}
+              disabled={saving}
+              style={{ fontSize: 10, color: '#4ADE80', background: 'transparent', border: 'none', cursor: 'pointer', fontFamily: 'inherit', textTransform: 'uppercase', letterSpacing: '0.08em' }}
+            >
+              {saving ? '…' : '✓ Clear'}
+            </button>
+          </div>
+          {cell.delayReason && (
+            <p style={{ fontSize: 11, color: 'var(--text-tertiary)', margin: 0 }}>{cell.delayReason}</p>
+          )}
+        </div>
+      )}
+
+      {/* Status actions */}
+      <div style={{ marginBottom: 20 }}>
+        <p className="text-overline-muted" style={{ margin: '0 0 10px' }}>Set status</p>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          {STATUS_ACTIONS.map((a) => (
+            <button
+              key={a.value}
+              disabled={saving || cell.status === a.value}
+              onClick={() => handleSetStatus(a.value)}
+              style={{
+                padding: '7px 14px', fontSize: 11, fontWeight: 700,
+                fontFamily: 'inherit', cursor: saving || cell.status === a.value ? 'not-allowed' : 'pointer',
+                borderRadius: 8, border: `1px solid ${a.value === cell.status ? a.color : 'var(--border-subtle)'}`,
+                background: a.value === cell.status ? `${a.color}18` : 'var(--card-bg)',
+                color: a.value === cell.status ? a.color : 'var(--text-secondary)',
+                opacity: saving ? 0.5 : 1, transition: 'all 120ms',
+              }}
+            >
+              {a.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Delay reporting */}
+      <div style={{ marginBottom: 20 }}>
+        <button
+          onClick={() => setShowDelayForm((v) => !v)}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 8, width: '100%',
+            padding: '10px 14px', borderRadius: 10, fontSize: 11, fontWeight: 700,
+            background: showDelayForm ? 'rgba(239,68,68,0.08)' : 'var(--card-bg)',
+            border: `1px solid ${showDelayForm ? 'rgba(239,68,68,0.30)' : 'var(--border-subtle)'}`,
+            color: showDelayForm ? '#FCA5A5' : 'var(--text-secondary)',
+            cursor: 'pointer', fontFamily: 'inherit', transition: 'all 120ms', textAlign: 'left',
+          }}
+        >
+          <AlertTriangle size={13} />
+          Report delay
+          <ChevronDown size={13} style={{ marginLeft: 'auto', transform: showDelayForm ? 'rotate(180deg)' : 'none', transition: 'transform 160ms' }} />
+        </button>
+
+        {showDelayForm && (
+          <div style={{ padding: '14px', background: 'rgba(15,15,18,0.7)', border: '1px solid rgba(239,68,68,0.20)', borderTop: 'none', borderRadius: '0 0 10px 10px' }}>
+            <label style={{ display: 'block', marginBottom: 10 }}>
+              <span className="text-overline-muted" style={{ display: 'block', marginBottom: 6 }}>Category</span>
+              <select
+                value={delayCat}
+                onChange={(e) => setDelayCat(e.target.value)}
+                style={{
+                  width: '100%', padding: '8px 12px', fontSize: 12, fontFamily: 'inherit',
+                  background: 'var(--input-bg)', border: '1px solid var(--border-subtle)',
+                  borderRadius: 8, color: DELAY_CATEGORY_COLOR[delayCat] || 'var(--text-primary)',
+                  outline: 'none',
+                }}
+              >
+                {DELAY_CATS.map((c) => (
+                  <option key={c.key} value={c.key}>{c.label}</option>
+                ))}
+              </select>
+            </label>
+            <label style={{ display: 'block', marginBottom: 12 }}>
+              <span className="text-overline-muted" style={{ display: 'block', marginBottom: 6 }}>Reason</span>
+              <textarea
+                value={delayReason}
+                onChange={(e) => setDelayReason(e.target.value)}
+                placeholder="Describe the specific reason…"
+                rows={3}
+                style={{
+                  width: '100%', padding: '8px 12px', fontSize: 12, fontFamily: 'inherit',
+                  background: 'var(--input-bg)', border: '1px solid var(--border-subtle)',
+                  borderRadius: 8, color: 'var(--text-primary)', resize: 'vertical',
+                  outline: 'none', boxSizing: 'border-box',
+                }}
+              />
+            </label>
+            <button
+              onClick={handleReportDelay}
+              disabled={saving || !delayReason.trim()}
+              style={{
+                width: '100%', padding: '9px 0', fontSize: 12, fontWeight: 700,
+                fontFamily: 'inherit', background: saving || !delayReason.trim() ? 'rgba(239,68,68,0.10)' : 'rgba(239,68,68,0.18)',
+                border: '1px solid rgba(239,68,68,0.35)', color: '#FCA5A5',
+                borderRadius: 8, cursor: saving || !delayReason.trim() ? 'not-allowed' : 'pointer',
+              }}
+            >
+              {saving ? 'Saving…' : 'Mark as delayed'}
+            </button>
+          </div>
         )}
       </div>
-    )}
 
-    <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: 16, marginTop: 16 }}>
-      <p className="text-overline-muted" style={{ margin: '0 0 8px' }}>Assignment</p>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text-secondary)', fontSize: 12 }}>
-        <UserIcon size={13} />
-        {cell.assignedTo || cell.store.areaManager || 'Unassigned'}
+      {/* Assignment */}
+      <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: 16, marginTop: 4 }}>
+        <p className="text-overline-muted" style={{ margin: '0 0 8px' }}>Assignment</p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text-secondary)', fontSize: 12 }}>
+          <UserIcon size={13} />
+          {cell.assignedTo || cell.store.areaManager || 'Unassigned'}
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 const DateBlock: React.FC<{ label: string; value: string }> = ({ label, value }) => (
   <div style={{ padding: 12, borderRadius: 10, background: 'var(--card-bg)', border: '1px solid var(--border-subtle)' }}>

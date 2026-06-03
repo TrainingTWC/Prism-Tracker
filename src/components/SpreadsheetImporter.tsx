@@ -4,6 +4,13 @@ import { api } from '../../convex/_generated/api';
 import { parseMatrix, ParsedImport } from '@/src/lib/importParser';
 import { Upload, AlertCircle, CheckCircle, ChevronDown, ChevronUp } from 'lucide-react';
 
+const INPUT: React.CSSProperties = {
+  width: '100%', padding: '9px 12px', fontSize: 12, fontFamily: 'inherit',
+  background: 'var(--input-bg)', border: '1px solid var(--border-subtle)',
+  borderRadius: 10, color: 'var(--text-primary)', outline: 'none',
+  boxSizing: 'border-box',
+};
+
 export const SpreadsheetImporter: React.FC = () => {
   const [file, setFile] = useState<File | null>(null);
   const [parsed, setParsed] = useState<ParsedImport | null>(null);
@@ -16,192 +23,230 @@ export const SpreadsheetImporter: React.FC = () => {
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (!selectedFile) return;
-
     setFile(selectedFile);
     const text = await selectedFile.text();
-    const parsed = parseMatrix(text);
-    setParsed(parsed);
+    const parsedData = parseMatrix(text);
+    setParsed(parsedData);
     setResult(null);
   };
 
   const handleImport = async () => {
     if (!parsed || !file) return;
-
     setImporting(true);
     try {
       const res = await bulkImport({
         fileName: file.name,
-        importedBy: 'user@prism.local', // TODO: get from auth context
+        importedBy: 'user@prism.local',
         stores: parsed.stores,
         initiatives: parsed.initiatives,
-        rollouts: parsed.rollouts,
+        rollouts: parsed.rollouts.map(({ plannedStart, plannedEnd, ...r }) => r),
       });
       setResult(res);
     } catch (err) {
-      console.error('Import failed:', err);
       setResult({ error: String(err) });
     } finally {
       setImporting(false);
     }
   };
 
-  const SectionToggle: React.FC<{
-    title: string;
-    id: string;
-    count: number;
-    children: React.ReactNode;
-  }> = ({ title, id, count, children }) => {
+  const SectionToggle: React.FC<{ title: string; id: string; count: number; children: React.ReactNode }> = ({ title, id, count, children }) => {
     const isOpen = expandedSection === id;
     return (
-      <div className="border border-blue-200 rounded-lg overflow-hidden">
+      <div style={{ border: '1px solid var(--border-subtle)', borderRadius: 10, overflow: 'hidden', marginBottom: 8 }}>
         <button
+          type="button"
           onClick={() => setExpandedSection(isOpen ? null : id)}
-          className="w-full px-4 py-3 bg-blue-50 hover:bg-blue-100 flex items-center justify-between"
+          style={{
+            width: '100%', padding: '10px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            background: 'var(--card-bg)', border: 'none', cursor: 'pointer', fontFamily: 'inherit',
+            color: 'var(--text-secondary)', fontSize: 12, fontWeight: 700,
+          }}
         >
-          <span className="font-semibold text-blue-900">
-            {title} ({count})
-          </span>
-          {isOpen ? (
-            <ChevronUp size={20} className="text-blue-600" />
-          ) : (
-            <ChevronDown size={20} className="text-blue-600" />
-          )}
+          <span>{title} <span style={{ color: 'var(--signal-500)', fontVariantNumeric: 'tabular-nums' }}>({count})</span></span>
+          {isOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
         </button>
-        {isOpen && <div className="p-4 bg-blue-50 max-h-96 overflow-auto">{children}</div>}
+        {isOpen && (
+          <div style={{ padding: 14, background: 'rgba(12,12,15,0.6)', maxHeight: 240, overflowY: 'auto', fontSize: 11 }}>
+            {children}
+          </div>
+        )}
       </div>
     );
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-6 bg-white border border-gray-200 rounded-lg">
-      <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-        <Upload className="text-blue-600" size={28} />
-        Import Tracker Data
-      </h2>
-
-      {/* File Upload */}
-      <div className="mb-6">
-        <label className="block mb-2 text-sm font-semibold text-gray-700">
-          Upload CSV
-        </label>
-        <input
-          type="file"
-          accept=".csv"
-          onChange={handleFileSelect}
-          className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-blue-600 file:text-white file:cursor-pointer hover:file:bg-blue-700"
-        />
-        {file && <p className="text-sm text-gray-600 mt-2">Selected: {file.name}</p>}
+    <div style={{ maxWidth: 680, margin: '0 auto' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
+        <div style={{
+          width: 36, height: 36, borderRadius: 10,
+          background: 'linear-gradient(135deg,#1D4ED8,#3B82F6)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <Upload size={16} color="#fff" />
+        </div>
+        <div>
+          <p className="text-overline" style={{ margin: 0 }}>Data · Import</p>
+          <h2 style={{ fontSize: 16, fontWeight: 700, color: 'var(--obsidian-50)', margin: 0 }}>Import tracker CSV</h2>
+        </div>
       </div>
+
+      {/* File upload */}
+      <label style={{ display: 'block', marginBottom: 20 }}>
+        <span className="text-overline-muted" style={{ display: 'block', marginBottom: 8 }}>Select CSV file</span>
+        <div style={{
+          border: '2px dashed var(--border-subtle)', borderRadius: 12, padding: '28px 20px',
+          textAlign: 'center', cursor: 'pointer', transition: 'border-color 150ms',
+          background: 'var(--card-bg)',
+        }}
+          onDragOver={(e) => e.preventDefault()}
+        >
+          <Upload size={24} color="var(--text-muted)" style={{ margin: '0 auto 10px' }} />
+          <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: '0 0 6px' }}>
+            {file ? <span style={{ color: 'var(--signal-400)' }}>{file.name}</span> : 'Click to select or drag & drop'}
+          </p>
+          <p style={{ fontSize: 11, color: 'var(--text-muted)', margin: 0 }}>CSV format · stores × initiatives matrix</p>
+          <input
+            type="file"
+            accept=".csv"
+            onChange={handleFileSelect}
+            style={{ display: 'none' }}
+            id="csv-upload"
+          />
+        </div>
+        <label
+          htmlFor="csv-upload"
+          style={{
+            display: 'block', textAlign: 'center', marginTop: 10,
+            padding: '8px 0', fontSize: 12, fontWeight: 700, fontFamily: 'inherit',
+            background: 'var(--card-bg)', border: '1px solid var(--border-subtle)',
+            borderRadius: 8, color: 'var(--text-secondary)', cursor: 'pointer',
+          }}
+        >
+          Browse file
+        </label>
+      </label>
 
       {/* Preview */}
       {parsed && (
-        <div className="mb-6 space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="p-4 bg-emerald-50 border border-emerald-200 rounded">
-              <p className="text-sm text-gray-600">Stores to Upsert</p>
-              <p className="text-3xl font-bold text-emerald-700">{parsed.stores.length}</p>
-            </div>
-            <div className="p-4 bg-blue-50 border border-blue-200 rounded">
-              <p className="text-sm text-gray-600">Initiatives</p>
-              <p className="text-3xl font-bold text-blue-700">{parsed.initiatives.length}</p>
-            </div>
-            <div className="p-4 bg-purple-50 border border-purple-200 rounded">
-              <p className="text-sm text-gray-600">Rollout Cells</p>
-              <p className="text-3xl font-bold text-purple-700">{parsed.rollouts.length}</p>
-            </div>
+        <div style={{ marginBottom: 20 }}>
+          {/* Stats row */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 16 }}>
+            {[
+              { label: 'Stores', value: parsed.stores.length, color: '#22C55E' },
+              { label: 'Initiatives', value: parsed.initiatives.length, color: '#3B82F6' },
+              { label: 'Rollout cells', value: parsed.rollouts.length, color: '#A855F7' },
+            ].map(({ label, value, color }) => (
+              <div key={label} style={{
+                padding: '14px 16px', borderRadius: 12,
+                background: `${color}0D`, border: `1px solid ${color}26`,
+              }}>
+                <p style={{ margin: '0 0 4px', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.10em', color: `${color}BB` }}>{label}</p>
+                <p style={{ margin: 0, fontSize: 26, fontWeight: 800, color, fontVariantNumeric: 'tabular-nums' }}>{value}</p>
+              </div>
+            ))}
           </div>
 
           {/* Warnings */}
           {parsed.warnings.length > 0 && (
-            <div className="p-4 bg-yellow-50 border border-yellow-200 rounded flex gap-3">
-              <AlertCircle size={20} className="text-yellow-600 flex-shrink-0 mt-0.5" />
+            <div style={{
+              display: 'flex', gap: 10, padding: '12px 14px',
+              background: 'rgba(234,179,8,0.06)', border: '1px solid rgba(234,179,8,0.20)',
+              borderRadius: 10, marginBottom: 12,
+            }}>
+              <AlertCircle size={16} color="#EAB308" style={{ flexShrink: 0, marginTop: 1 }} />
               <div>
-                <p className="font-semibold text-yellow-900">Warnings:</p>
-                <ul className="text-sm text-yellow-800 mt-1">
-                  {parsed.warnings.map((w, i) => (
-                    <li key={i}>• {w}</li>
-                  ))}
+                <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, color: '#FDE68A' }}>
+                  {parsed.warnings.length} warning{parsed.warnings.length > 1 ? 's' : ''}
+                </p>
+                <ul style={{ margin: 0, padding: '0 0 0 14px', fontSize: 11, color: '#FCD34D' }}>
+                  {parsed.warnings.map((w, i) => <li key={i}>{w}</li>)}
                 </ul>
               </div>
             </div>
           )}
 
-          {/* Expandable sections */}
-          <SectionToggle title="Stores Preview" id="stores" count={parsed.stores.length}>
-            <div className="space-y-2">
-              {parsed.stores.slice(0, 5).map((s, i) => (
-                <div key={i} className="p-2 bg-white rounded border border-gray-200 text-sm">
-                  <strong>{s.storeCode}</strong> - {s.storeName} ({s.region})
-                </div>
-              ))}
-              {parsed.stores.length > 5 && (
-                <p className="text-xs text-gray-600 italic">
-                  ... and {parsed.stores.length - 5} more
-                </p>
-              )}
-            </div>
+          {/* Expandable previews */}
+          <SectionToggle title="Stores preview" id="stores" count={parsed.stores.length}>
+            {parsed.stores.slice(0, 8).map((s, i) => (
+              <div key={i} style={{ padding: '6px 10px', marginBottom: 4, borderRadius: 6, background: 'var(--card-bg)', display: 'flex', gap: 12 }}>
+                <span style={{ color: 'var(--signal-500)', fontWeight: 700, minWidth: 60 }}>{s.storeCode}</span>
+                <span style={{ color: 'var(--text-primary)' }}>{s.storeName}</span>
+                <span style={{ color: 'var(--text-muted)', marginLeft: 'auto' }}>{s.region}</span>
+              </div>
+            ))}
+            {parsed.stores.length > 8 && (
+              <p style={{ margin: '8px 0 0', color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                + {parsed.stores.length - 8} more stores
+              </p>
+            )}
           </SectionToggle>
 
-          <SectionToggle
-            title="Initiatives Preview"
-            id="initiatives"
-            count={parsed.initiatives.length}
-          >
-            <div className="space-y-2">
-              {parsed.initiatives.slice(0, 5).map((i, idx) => (
-                <div key={idx} className="p-2 bg-white rounded border border-gray-200 text-sm">
-                  <strong>{i.name}</strong> <span className="text-xs text-gray-600">({i.type})</span>
-                </div>
-              ))}
-              {parsed.initiatives.length > 5 && (
-                <p className="text-xs text-gray-600 italic">
-                  ... and {parsed.initiatives.length - 5} more
-                </p>
-              )}
-            </div>
+          <SectionToggle title="Initiatives preview" id="initiatives" count={parsed.initiatives.length}>
+            {parsed.initiatives.slice(0, 8).map((ini, idx) => (
+              <div key={idx} style={{ padding: '6px 10px', marginBottom: 4, borderRadius: 6, background: 'var(--card-bg)', display: 'flex', gap: 12, alignItems: 'center' }}>
+                <span style={{
+                  padding: '2px 8px', borderRadius: 20, fontSize: 9, fontWeight: 700, textTransform: 'uppercase',
+                  background: 'rgba(59,130,246,0.14)', color: '#60A5FA',
+                }}>{ini.type}</span>
+                <span style={{ color: 'var(--text-primary)' }}>{ini.name}</span>
+              </div>
+            ))}
+            {parsed.initiatives.length > 8 && (
+              <p style={{ margin: '8px 0 0', color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                + {parsed.initiatives.length - 8} more
+              </p>
+            )}
           </SectionToggle>
         </div>
       )}
 
-      {/* Import Button */}
+      {/* Import button */}
       {parsed && !result && (
         <button
           onClick={handleImport}
           disabled={importing}
-          className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-semibold rounded-lg transition"
+          style={{
+            width: '100%', padding: '12px 0', fontSize: 13, fontWeight: 700,
+            fontFamily: 'inherit', cursor: importing ? 'not-allowed' : 'pointer',
+            background: importing ? 'rgba(59,130,246,0.10)' : 'linear-gradient(135deg,#1D4ED8,#3B82F6)',
+            border: '1px solid rgba(59,130,246,0.40)', borderRadius: 12, color: '#fff',
+            transition: 'opacity 150ms', opacity: importing ? 0.6 : 1,
+          }}
         >
-          {importing ? 'Importing...' : 'Commit Import'}
+          {importing ? 'Importing…' : `Import ${parsed.stores.length} stores · ${parsed.initiatives.length} initiatives · ${parsed.rollouts.length} rollouts`}
         </button>
       )}
 
       {/* Results */}
       {result && (
-        <div className={`p-4 rounded-lg border-2 ${result.error ? 'bg-red-50 border-red-300' : 'bg-green-50 border-green-300'}`}>
+        <div style={{
+          padding: 18, borderRadius: 12,
+          background: result.error ? 'rgba(239,68,68,0.06)' : 'rgba(34,197,94,0.06)',
+          border: `1px solid ${result.error ? 'rgba(239,68,68,0.25)' : 'rgba(34,197,94,0.25)'}`,
+        }}>
           {result.error ? (
-            <div className="flex gap-3">
-              <AlertCircle size={24} className="text-red-600 flex-shrink-0" />
+            <div style={{ display: 'flex', gap: 12 }}>
+              <AlertCircle size={20} color="#EF4444" style={{ flexShrink: 0 }} />
               <div>
-                <p className="font-semibold text-red-900">Import Failed</p>
-                <p className="text-sm text-red-700 mt-1">{result.error}</p>
+                <p style={{ margin: '0 0 6px', fontWeight: 700, color: '#FCA5A5', fontSize: 13 }}>Import failed</p>
+                <p style={{ margin: 0, fontSize: 12, color: '#FCA5A5', opacity: 0.8 }}>{result.error}</p>
               </div>
             </div>
           ) : (
-            <div className="flex gap-3">
-              <CheckCircle size={24} className="text-green-600 flex-shrink-0" />
+            <div style={{ display: 'flex', gap: 12 }}>
+              <CheckCircle size={20} color="#22C55E" style={{ flexShrink: 0 }} />
               <div>
-                <p className="font-semibold text-green-900">Import Successful</p>
-                <ul className="text-sm text-green-700 mt-2 space-y-1">
-                  <li>✓ Stores upserted: {result.storesUpserted}</li>
-                  <li>✓ Initiatives upserted: {result.initiativesUpserted}</li>
-                  <li>✓ Rollouts upserted: {result.rolloutsUpserted}</li>
+                <p style={{ margin: '0 0 8px', fontWeight: 700, color: '#4ADE80', fontSize: 13 }}>Import successful</p>
+                <ul style={{ margin: 0, padding: '0 0 0 14px', fontSize: 12, color: '#86EFAC', lineHeight: 1.8 }}>
+                  <li>Stores upserted: {result.storesUpserted}</li>
+                  <li>Initiatives upserted: {result.initiativesUpserted}</li>
+                  <li>Rollouts upserted: {result.rolloutsUpserted}</li>
                 </ul>
-                {result.warnings.length > 0 && (
-                  <div className="mt-3 pt-3 border-t border-green-300">
-                    <p className="text-sm font-semibold text-yellow-800">Warnings:</p>
-                    <ul className="text-xs text-yellow-700 mt-1">
-                      {result.warnings.map((w: string, i: number) => (
-                        <li key={i}>• {w}</li>
-                      ))}
+                {result.warnings?.length > 0 && (
+                  <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid rgba(34,197,94,0.20)' }}>
+                    <p style={{ margin: '0 0 4px', fontSize: 11, fontWeight: 700, color: '#FDE68A' }}>Warnings:</p>
+                    <ul style={{ margin: 0, padding: '0 0 0 14px', fontSize: 11, color: '#FCD34D' }}>
+                      {result.warnings.map((w: string, i: number) => <li key={i}>{w}</li>)}
                     </ul>
                   </div>
                 )}
@@ -209,17 +254,18 @@ export const SpreadsheetImporter: React.FC = () => {
             </div>
           )}
           <button
-            onClick={() => {
-              setResult(null);
-              setFile(null);
-              setParsed(null);
+            onClick={() => { setResult(null); setFile(null); setParsed(null); }}
+            style={{
+              width: '100%', marginTop: 16, padding: '9px 0', fontSize: 12, fontWeight: 700,
+              fontFamily: 'inherit', background: 'var(--card-bg)', border: '1px solid var(--border-subtle)',
+              borderRadius: 10, color: 'var(--text-secondary)', cursor: 'pointer',
             }}
-            className="mt-4 w-full py-2 px-3 bg-blue-600 hover:bg-blue-700 text-white rounded font-semibold text-sm"
           >
-            Import Another File
+            Import another file
           </button>
         </div>
       )}
     </div>
   );
 };
+

@@ -1,13 +1,15 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useTrackerData } from '../lib/useTrackerData';
 import { PageHeader, Panel, HealthPill, KpiTile } from '../components/shell/PageHeader';
 import { LoadingPanel } from './DashboardView';
 import { INITIATIVE_TYPE_COLOR, fmtDate, pct } from '../lib/health';
 import { Sparkles, Plus } from 'lucide-react';
 import type { ViewId } from '../App';
+import { CreateInitiativeModal } from '../components/CreateInitiativeModal';
 
 export const InitiativesView: React.FC<{ onNavigate: (v: ViewId, p?: any) => void }> = ({ onNavigate }) => {
   const { loading, initiatives, rollouts } = useTrackerData();
+  const [showCreate, setShowCreate] = useState(false);
   if (loading) return <LoadingPanel />;
 
   const enriched = initiatives.map((i) => {
@@ -24,7 +26,11 @@ export const InitiativesView: React.FC<{ onNavigate: (v: ViewId, p?: any) => voi
         overline="Initiatives · Catalog"
         title="All initiatives"
         subtitle={`${initiatives.length} initiatives · ${rollouts.length} rollouts`}
-        actions={<button className="btn-primary" disabled><Plus size={14} /> New initiative</button>}
+        actions={
+          <button className="btn-primary" onClick={() => setShowCreate(true)}>
+            <Plus size={14} /> New initiative
+          </button>
+        }
       />
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 16 }}>
@@ -70,6 +76,21 @@ export const InitiativesView: React.FC<{ onNavigate: (v: ViewId, p?: any) => voi
           );
         })}
       </div>
+
+      {initiatives.length === 0 && (
+        <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--text-muted)' }}>
+          <Sparkles size={32} style={{ marginBottom: 12, opacity: 0.3 }} />
+          <p style={{ fontSize: 13, marginBottom: 8 }}>No initiatives yet</p>
+          <p style={{ fontSize: 11 }}>Click "New initiative" to create the first one, or import from the Data → Import view.</p>
+        </div>
+      )}
+
+      {showCreate && (
+        <CreateInitiativeModal
+          onClose={() => setShowCreate(false)}
+          onCreated={() => setShowCreate(false)}
+        />
+      )}
     </>
   );
 };
