@@ -145,7 +145,7 @@ const MainApp: React.FC = () => {
 
   const renderView = () => {
     switch (view) {
-      case 'dashboard': return <DashboardView />;
+      case 'dashboard': return <DashboardView onNavigate={navigate} />;
       case 'grid': return <GridView search={search} />;
       case 'timeline': return <TimelineView />;
       case 'calendar': return <CalendarView />;
