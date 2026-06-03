@@ -9,6 +9,7 @@ import { api } from '../convex/_generated/api';
 
 
 import { AuthGate } from './components/AuthGate';
+import { Landing } from './components/Landing';
 import { AppShell } from './components/shell/AppShell';
 import { Sidebar } from './components/shell/Sidebar';
 import { Topbar } from './components/shell/Topbar';
@@ -75,6 +76,27 @@ function parseLocation(): { view: ViewId; params: ViewParams } {
   return { view, params: {} };
 }
 
+// ─── Landing + auth modal ──────────────────────────────────────────────────────
+const LandingWithAuth: React.FC = () => {
+  const [showAuth, setShowAuth] = useState(false);
+  return (
+    <>
+      <Landing onSignIn={() => setShowAuth(true)} />
+      {showAuth && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 300,
+          background: 'rgba(9,9,11,0.88)', backdropFilter: 'blur(16px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }} onClick={() => setShowAuth(false)}>
+          <div onClick={e => e.stopPropagation()}>
+            <AuthGate />
+          </div>
+        </div>
+      )}
+    </>
+  );
+};
+
 const MainApp: React.FC = () => {
   const { signOut } = useAuthActions();
   const user = useQuery(api.user.current);
@@ -139,7 +161,7 @@ const MainApp: React.FC = () => {
     );
   }
 
-  if (!user) return <AuthGate />;
+  if (!user) return <LandingWithAuth />;
 
   const handleSignOut = () => { void signOut(); };
 
