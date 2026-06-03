@@ -2,7 +2,7 @@
  * Prism Tracker — Phase 5
  * Full Prism OS shell + 18 dashboard surfaces.
  */
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuthActions } from '@convex-dev/auth/react';
 import { useQuery } from 'convex/react';
 import { api } from '../convex/_generated/api';
@@ -47,19 +47,57 @@ interface ViewParams {
   initiativeId?: string;
 }
 
+const ROUTE_MAP: Record<string, ViewId> = {
+  '/': 'dashboard', '/grid': 'grid', '/timeline': 'timeline',
+  '/calendar': 'calendar', '/map': 'map', '/stores': 'stores',
+  '/equipment': 'equipment', '/initiatives': 'initiatives',
+  '/vendors': 'vendors', '/snags': 'snags', '/delays': 'delays',
+  '/alerts': 'alerts', '/managers': 'managers', '/import': 'import',
+  '/export': 'export', '/audit': 'audit', '/settings': 'settings',
+};
+const VIEW_PATH: Record<ViewId, string> = {
+  dashboard: '/', grid: '/grid', timeline: '/timeline', calendar: '/calendar',
+  map: '/map', stores: '/stores', 'store-profile': '/stores', equipment: '/equipment',
+  initiatives: '/initiatives', 'initiative-page': '/initiatives', vendors: '/vendors',
+  snags: '/snags', delays: '/delays', alerts: '/alerts', managers: '/managers',
+  import: '/import', export: '/export', audit: '/audit', settings: '/settings',
+};
+
+function parseLocation(): { view: ViewId; params: ViewParams } {
+  const path = window.location.pathname.replace(/\/$/, '') || '/';
+  // /initiative/:id
+  const initMatch = path.match(/^\/initiative\/(.+)$/);
+  if (initMatch) return { view: 'initiative-page', params: { initiativeId: initMatch[1] } };
+  // /store/:id
+  const storeMatch = path.match(/^\/store\/(.+)$/);
+  if (storeMatch) return { view: 'store-profile', params: { storeId: storeMatch[1] } };
+  const view = ROUTE_MAP[path] ?? 'dashboard';
+  return { view, params: {} };
+}
+
 const MainApp: React.FC = () => {
   const { signOut } = useAuthActions();
   const user = useQuery(api.user.current);
   const { kpis } = useTrackerData();
 
-  const [view, setView] = useState<ViewId>('dashboard');
-  const [params, setParams] = useState<ViewParams>({});
+  const [{ view, params }, setLocation] = useState(parseLocation);
   const [search, setSearch] = useState('');
 
-  const navigate = (v: ViewId, p: ViewParams = {}) => {
-    setView(v);
-    setParams(p);
-  };
+  // Listen to browser back/forward
+  useEffect(() => {
+    const handler = () => setLocation(parseLocation());
+    window.addEventListener('popstate', handler);
+    return () => window.removeEventListener('popstate', handler);
+  }, []);
+
+  const navigate = useCallback((v: ViewId, p: ViewParams = {}) => {
+    let path: string;
+    if (v === 'initiative-page' && p.initiativeId) path = `/initiative/${p.initiativeId}`;
+    else if (v === 'store-profile' && p.storeId) path = `/store/${p.storeId}`;
+    else path = VIEW_PATH[v] ?? '/';
+    window.history.pushState({ v, p }, '', path);
+    setLocation({ view: v, params: p });
+  }, []);
 
   if (user === undefined) {
     return (

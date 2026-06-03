@@ -117,7 +117,10 @@ export const DashboardView: React.FC = () => {
                     <Pie data={donutData} dataKey="value" nameKey="name" innerRadius={45} outerRadius={75} paddingAngle={2}>
                       {donutData.map((d, i) => <Cell key={i} fill={d.color} stroke="rgba(0,0,0,0.4)" />)}
                     </Pie>
-                    <Tooltip />
+                    <Tooltip
+                      contentStyle={{ background: '#141418', border: '1px solid #27272F', color: '#F4F4F5', borderRadius: 8, fontSize: 11, fontFamily: 'JetBrains Mono, monospace' }}
+                      cursor={{ fill: 'rgba(255,255,255,0.04)' }}
+                    />
                   </PieChart>
                 </ResponsiveContainer>
               </div>
@@ -171,7 +174,10 @@ export const DashboardView: React.FC = () => {
                 <CartesianGrid horizontal={false} />
                 <XAxis type="number" hide />
                 <YAxis type="category" dataKey="name" width={110} tick={{ fontSize: 10, fill: '#A1A1AE' }} axisLine={false} tickLine={false} />
-                <Tooltip />
+                <Tooltip
+                      contentStyle={{ background: '#141418', border: '1px solid #27272F', color: '#F4F4F5', borderRadius: 8, fontSize: 11, fontFamily: 'JetBrains Mono, monospace' }}
+                      cursor={{ fill: 'rgba(255,255,255,0.04)' }}
+                    />
                 <Bar dataKey="value" fill="#3B82F6" radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>

@@ -14,6 +14,16 @@
     <style>
       html, body { background: #09090B; margin: 0; }
     </style>
+    <script>
+      // Restore path saved by 404.html SPA fallback (GitHub Pages trick).
+      (function() {
+        var redirect = sessionStorage.getItem('spa_redirect');
+        if (redirect && redirect !== '/') {
+          sessionStorage.removeItem('spa_redirect');
+          window.history.replaceState(null, '', redirect);
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
