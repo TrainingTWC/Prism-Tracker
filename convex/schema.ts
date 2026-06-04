@@ -224,4 +224,35 @@ export default defineSchema({
   })
     .index("by_project", ["projectId"])
     .index("by_status", ["status"]),
+
+  // ─── Intelligence Integration Cache ─────────────────────────────────────
+
+  /** Employee master synced from Prism Intelligence (hourly). */
+  employees: defineTable({
+    employeeId: v.string(),           // primary key from Intelligence
+    name: v.string(),
+    designation: v.optional(v.string()),
+    departmentCode: v.optional(v.string()), // matches departments.code
+    email: v.optional(v.string()),
+    phone: v.optional(v.string()),
+    active: v.boolean(),
+    lastSyncedAt: v.number(),
+  })
+    .index("by_employeeId", ["employeeId"])
+    .index("by_departmentCode", ["departmentCode"])
+    .index("by_active", ["active"]),
+
+  /** Calendar events cached from Prism Intelligence (hourly). */
+  cachedCalendarEvents: defineTable({
+    source: v.literal("intelligence"),
+    externalId: v.string(),
+    title: v.string(),
+    date: v.number(),
+    endDate: v.optional(v.number()),
+    kind: v.string(),
+    color: v.optional(v.string()),
+    lastSyncedAt: v.number(),
+  })
+    .index("by_source", ["source"])
+    .index("by_date", ["date"]),
 });

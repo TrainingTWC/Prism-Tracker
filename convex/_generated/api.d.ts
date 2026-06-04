@@ -10,9 +10,12 @@
 
 import type * as admin from "../admin.js";
 import type * as auth from "../auth.js";
+import type * as calendarSync from "../calendarSync.js";
 import type * as cleanup from "../cleanup.js";
+import type * as crons from "../crons.js";
 import type * as delayCategories from "../delayCategories.js";
 import type * as departments from "../departments.js";
+import type * as employees from "../employees.js";
 import type * as http from "../http.js";
 import type * as import_ from "../import.js";
 import type * as importSheets from "../importSheets.js";
@@ -34,9 +37,12 @@ import type {
 declare const fullApi: ApiFromModules<{
   admin: typeof admin;
   auth: typeof auth;
+  calendarSync: typeof calendarSync;
   cleanup: typeof cleanup;
+  crons: typeof crons;
   delayCategories: typeof delayCategories;
   departments: typeof departments;
+  employees: typeof employees;
   http: typeof http;
   import: typeof import_;
   importSheets: typeof importSheets;

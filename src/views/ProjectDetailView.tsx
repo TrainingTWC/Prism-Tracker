@@ -54,6 +54,7 @@ export const ProjectDetailView: React.FC<{ projectId?: string; onNavigate: (v: V
   const removeTask = useMutation(api.projects.removeTask);
   const updateProject = useMutation(api.projects.update);
   const departments = useQuery(api.departments.list) as any[] | undefined;
+  const employees = useQuery(api.employees.list, {}) as any[] | undefined;
 
   const [taskModal, setTaskModal] = useState<{ open: boolean; columnStatus: TaskStatus; editing: any | null }>({ open: false, columnStatus: 'todo', editing: null });
   const [taskForm, setTaskForm] = useState<TaskForm>(EMPTY_TASK);
@@ -276,7 +277,18 @@ export const ProjectDetailView: React.FC<{ projectId?: string; onNavigate: (v: V
               </div>
               <div>
                 <label style={{ fontSize: 11, color: 'var(--text-tertiary)', display: 'block', marginBottom: 5 }}>Assigned to</label>
-                <input style={inputSt} placeholder="Name or email" value={taskForm.assignedTo} onChange={e => setTaskForm(f => ({ ...f, assignedTo: e.target.value }))} />
+                {employees && employees.length > 0 ? (
+                  <select style={selectSt} value={taskForm.assignedTo} onChange={e => setTaskForm(f => ({ ...f, assignedTo: e.target.value }))}>
+                    <option value="">— Unassigned —</option>
+                    {employees.map((emp: any) => (
+                      <option key={emp._id} value={emp.name}>
+                        {emp.name}{emp.designation ? ` · ${emp.designation}` : ''}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <input style={inputSt} placeholder="Name or email" value={taskForm.assignedTo} onChange={e => setTaskForm(f => ({ ...f, assignedTo: e.target.value }))} />
+                )}
               </div>
               <div>
                 <label style={{ fontSize: 11, color: 'var(--text-tertiary)', display: 'block', marginBottom: 5 }}>Due date</label>

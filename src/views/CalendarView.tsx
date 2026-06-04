@@ -1,5 +1,7 @@
 import React, { useMemo, useState } from 'react';
+import { useQuery } from 'convex/react';
 import { useTrackerData } from '../lib/useTrackerData';
+import { api } from '../../convex/_generated/api';
 import { PageHeader, Panel } from '../components/shell/PageHeader';
 import { LoadingPanel } from './DashboardView';
 import { fmtDate } from '../lib/health';
@@ -7,17 +9,21 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 export const CalendarView: React.FC = () => {
   const { loading, initiatives, rollouts } = useTrackerData();
+  const intelligenceEvents = useQuery(api.calendarSync.listCachedEvents, {}) ?? [];
   const [cursor, setCursor] = useState(() => {
     const d = new Date(); d.setDate(1); return d;
   });
 
   const events = useMemo(() => {
-    const map: Record<string, { starts: number; ends: number; delays: number; titles: string[] }> = {};
+    const map: Record<string, { starts: number; ends: number; delays: number; hrEvents: number; titles: string[] }> = {};
+    const ensure = (k: string) => {
+      if (!map[k]) map[k] = { starts: 0, ends: 0, delays: 0, hrEvents: 0, titles: [] };
+    };
     const add = (ts: number | undefined, kind: 'starts' | 'ends' | 'delays', title: string) => {
       if (!ts) return;
       const d = new Date(ts);
       const k = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
-      if (!map[k]) map[k] = { starts: 0, ends: 0, delays: 0, titles: [] };
+      ensure(k);
       map[k][kind]++;
       if (map[k].titles.length < 3) map[k].titles.push(title);
     };
@@ -28,8 +34,16 @@ export const CalendarView: React.FC = () => {
     rollouts.forEach((r) => {
       if (r.isDelayed) add(r._creationTime, 'delays', 'delay reported');
     });
+    // Merge Intelligence HR/team calendar events
+    intelligenceEvents.forEach((e: any) => {
+      const d = new Date(e.date);
+      const k = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+      ensure(k);
+      map[k].hrEvents++;
+      if (map[k].titles.length < 3) map[k].titles.push(e.title);
+    });
     return map;
-  }, [initiatives, rollouts]);
+  }, [initiatives, rollouts, intelligenceEvents]);
 
   if (loading) return <LoadingPanel />;
 
@@ -89,6 +103,7 @@ export const CalendarView: React.FC = () => {
                     {e.starts > 0 && <Dot color="#3B82F6" label={`${e.starts} start`} />}
                     {e.ends > 0 && <Dot color="#EAB308" label={`${e.ends} end`} />}
                     {e.delays > 0 && <Dot color="#EF4444" label={`${e.delays} delay`} />}
+                    {e.hrEvents > 0 && <Dot color="#A855F7" label={`${e.hrEvents} HR`} />}
                   </div>
                 )}
               </div>
