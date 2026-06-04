@@ -259,3 +259,100 @@ export function parseMatrix(csv: string): ParsedImport {
 
   return { stores, initiatives, rollouts, warnings };
 }
+
+/**
+ * Parse the simple 2-row header format exported directly from Google Sheets.
+ * Row 1 (index 0): headers — store columns A-I + initiative names from col J+
+ * Row 2+ (index 1+): store data rows; participation cell non-empty & != "no" means participating.
+ *
+ * Difference from parseMatrix: NO meta row 2 with dates — data starts immediately at row 2.
+ */
+export function parseSimpleFormat(csv: string): ParsedImport {
+  const rows = parseCSV(csv);
+  if (rows.length < 2) {
+    return {
+      stores: [],
+      initiatives: [],
+      rollouts: [],
+      warnings: ["CSV must have at least 2 rows (header + one data row)"],
+    };
+  }
+
+  const headerRow = rows[0];
+  const dataRows = rows.slice(1);
+  const warnings: string[] = [];
+
+  const STORE_COLS = {
+    code: 0,
+    name: 1,
+    areaManager: 2,
+    region: 3,
+    city: 4,
+    format: 5,
+    menuType: 6,
+    coffeeMachine: 7,
+    merrychef: 8,
+  };
+  const INITIATIVES_START = 9;
+
+  // Parse initiative names from header row
+  const initiatives: ParsedImport["initiatives"] = [];
+  for (let i = INITIATIVES_START; i < headerRow.length; i++) {
+    const name = headerRow[i]?.trim();
+    if (!name) continue;
+    const lower = name.toLowerCase();
+    let type: "trial" | "launch" | "pilot" | "transition" = "trial";
+    if (lower.includes("pilot")) type = "pilot";
+    else if (lower.includes("launch")) type = "launch";
+    else if (lower.includes("transition")) type = "transition";
+    initiatives.push({
+      name,
+      type,
+      plannedStart: null,
+      plannedEnd: null,
+      variants: [],
+      regions: [],
+    });
+  }
+
+  const stores: ParsedImport["stores"] = [];
+  const rollouts: ParsedImport["rollouts"] = [];
+
+  for (const row of dataRows) {
+    const code = row[STORE_COLS.code]?.trim();
+    // Skip empty rows or accidental extra header rows
+    if (!code || code.toLowerCase() === "store code") continue;
+
+    stores.push({
+      storeCode: code,
+      storeName: row[STORE_COLS.name]?.trim() || "",
+      areaManager: row[STORE_COLS.areaManager]?.trim() || "",
+      region: row[STORE_COLS.region]?.trim() || "",
+      city: row[STORE_COLS.city]?.trim() || "",
+      storeFormat: row[STORE_COLS.format]?.trim() || "",
+      menuType: row[STORE_COLS.menuType]?.trim() || "",
+      coffeeMachine: row[STORE_COLS.coffeeMachine]?.trim() || "",
+      merrychefType: row[STORE_COLS.merrychef]?.trim() || "",
+    });
+
+    for (let i = 0; i < initiatives.length; i++) {
+      const val = row[INITIATIVES_START + i]?.trim() || "";
+      const lower = val.toLowerCase();
+      const participating =
+        val.length > 0 && lower !== "no" && lower !== "n" && val !== "0";
+      if (participating) {
+        rollouts.push({
+          storeCode: code,
+          initiativeName: initiatives[i].name,
+          participating: true,
+        });
+      }
+    }
+  }
+
+  if (stores.length === 0) {
+    warnings.push("No store rows detected — check that data starts at row 2 with Store Code in column A");
+  }
+
+  return { stores, initiatives, rollouts, warnings };
+}

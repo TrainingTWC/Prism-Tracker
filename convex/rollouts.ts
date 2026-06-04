@@ -208,3 +208,43 @@ export const updatesForRollout = query({
       .collect();
   },
 });
+
+/** Full admin patch — update any rollout field then recompute health. */
+export const adminPatch = mutation({
+  args: {
+    id: v.id("rollouts"),
+    participating: v.optional(v.boolean()),
+    status: v.optional(
+      v.union(
+        v.literal("not_started"),
+        v.literal("in_progress"),
+        v.literal("live"),
+        v.literal("completed"),
+        v.literal("delayed"),
+        v.literal("dropped"),
+      ),
+    ),
+    plannedStart: v.optional(v.number()),
+    plannedEnd: v.optional(v.number()),
+    actualStart: v.optional(v.number()),
+    actualEnd: v.optional(v.number()),
+    isDelayed: v.optional(v.boolean()),
+    delayCategory: v.optional(v.string()),
+    delayReason: v.optional(v.string()),
+    delayDays: v.optional(v.number()),
+    assignedTo: v.optional(v.string()),
+  },
+  handler: async (ctx, { id, ...fields }) => {
+    await ctx.db.patch(id, fields);
+    const updated = (await ctx.db.get(id)) as Doc<"rollouts">;
+    if (updated) await ctx.db.patch(id, { health: computeHealth(updated) });
+  },
+});
+
+/** Hard-delete a rollout record. */
+export const remove = mutation({
+  args: { id: v.id("rollouts") },
+  handler: async (ctx, { id }) => {
+    await ctx.db.delete(id);
+  },
+});

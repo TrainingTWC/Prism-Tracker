@@ -68,3 +68,11 @@ export const update = mutation({
     await ctx.db.patch(id, patch);
   },
 });
+
+/** Hard delete an initiative by ID. */
+export const remove = mutation({
+  args: { id: v.id("initiatives") },
+  handler: async (ctx, { id }) => {
+    await ctx.db.delete(id);
+  },
+});

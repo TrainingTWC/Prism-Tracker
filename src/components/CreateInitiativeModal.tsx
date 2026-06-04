@@ -6,10 +6,28 @@ import React, { useState } from 'react';
 import { useMutation } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { X, Sparkles } from 'lucide-react';
+import type { Id } from '../../convex/_generated/dataModel';
+
+export interface ExistingInitiative {
+  _id: Id<'initiatives'>;
+  name: string;
+  type: 'trial' | 'launch' | 'pilot' | 'transition';
+  status: 'planned' | 'active' | 'completed' | 'paused' | 'cancelled';
+  vendor?: string;
+  productCategory?: string;
+  plannedStart: number;
+  plannedEnd?: number;
+  regions: string[];
+  notes?: string;
+  variants: string[];
+  cities: string[];
+}
 
 interface Props {
   onClose: () => void;
   onCreated?: () => void;
+  /** Pass an existing initiative to switch to edit mode. */
+  existing?: ExistingInitiative | null;
 }
 
 const REGIONS = [
@@ -24,17 +42,24 @@ const INPUT: React.CSSProperties = {
   boxSizing: 'border-box',
 };
 
-export const CreateInitiativeModal: React.FC<Props> = ({ onClose, onCreated }) => {
-  const upsert = useMutation(api.initiatives.upsert);
+const toDateStr = (ts?: number) =>
+  ts ? new Date(ts).toISOString().slice(0, 10) : '';
 
-  const [name, setName] = useState('');
-  const [type, setType] = useState<'trial' | 'launch' | 'pilot' | 'transition'>('trial');
-  const [vendor, setVendor] = useState('');
-  const [productCategory, setProductCategory] = useState('');
-  const [plannedStart, setPlannedStart] = useState('');
-  const [plannedEnd, setPlannedEnd] = useState('');
-  const [selectedRegions, setSelectedRegions] = useState<string[]>([]);
-  const [notes, setNotes] = useState('');
+export const CreateInitiativeModal: React.FC<Props> = ({ onClose, onCreated, existing }) => {
+  const upsert = useMutation(api.initiatives.upsert);
+  const update = useMutation(api.initiatives.update);
+
+  const isEdit = !!existing;
+
+  const [name, setName] = useState(existing?.name ?? '');
+  const [type, setType] = useState<'trial' | 'launch' | 'pilot' | 'transition'>(existing?.type ?? 'trial');
+  const [status, setStatus] = useState<'planned' | 'active' | 'completed' | 'paused' | 'cancelled'>(existing?.status ?? 'planned');
+  const [vendor, setVendor] = useState(existing?.vendor ?? '');
+  const [productCategory, setProductCategory] = useState(existing?.productCategory ?? '');
+  const [plannedStart, setPlannedStart] = useState(toDateStr(existing?.plannedStart));
+  const [plannedEnd, setPlannedEnd] = useState(toDateStr(existing?.plannedEnd));
+  const [selectedRegions, setSelectedRegions] = useState<string[]>(existing?.regions ?? []);
+  const [notes, setNotes] = useState(existing?.notes ?? '');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -52,23 +77,28 @@ export const CreateInitiativeModal: React.FC<Props> = ({ onClose, onCreated }) =
     try {
       const startTs = plannedStart ? new Date(plannedStart).getTime() : Date.now();
       const endTs = plannedEnd ? new Date(plannedEnd).getTime() : undefined;
-      await upsert({
+      const payload = {
         name: name.trim(),
         type,
-        status: 'planned',
+        status,
         vendor: vendor.trim() || undefined,
         productCategory: productCategory.trim() || undefined,
-        variants: [],
+        variants: existing?.variants ?? [],
         regions: selectedRegions,
-        cities: [],
+        cities: existing?.cities ?? [],
         plannedStart: startTs,
         plannedEnd: endTs,
         notes: notes.trim() || undefined,
-      });
+      };
+      if (isEdit) {
+        await update({ id: existing!._id, patch: payload });
+      } else {
+        await upsert(payload);
+      }
       onCreated?.();
       onClose();
-    } catch (err: any) {
-      setError(String(err?.message || err));
+    } catch (err: unknown) {
+      setError(String((err as { message?: string })?.message ?? err));
     } finally {
       setSaving(false);
     }
@@ -119,9 +149,9 @@ export const CreateInitiativeModal: React.FC<Props> = ({ onClose, onCreated }) =
               <Sparkles size={16} color="#fff" />
             </div>
             <div>
-              <p className="text-overline" style={{ margin: 0 }}>Initiatives · New</p>
+              <p className="text-overline" style={{ margin: 0 }}>Initiatives · {isEdit ? 'Edit' : 'New'}</p>
               <h2 style={{ fontSize: 17, fontWeight: 700, color: 'var(--obsidian-50)', margin: 0 }}>
-                Create initiative
+                {isEdit ? existing!.name : 'Create initiative'}
               </h2>
             </div>
           </div>
@@ -143,7 +173,7 @@ export const CreateInitiativeModal: React.FC<Props> = ({ onClose, onCreated }) =
           </label>
 
           {/* Type row */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 16 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14, marginBottom: 16 }}>
             <label style={{ display: 'block' }}>
               <span className="text-overline-muted" style={{ display: 'block', marginBottom: 6 }}>Type</span>
               <select
@@ -155,6 +185,21 @@ export const CreateInitiativeModal: React.FC<Props> = ({ onClose, onCreated }) =
                 <option value="launch">Launch</option>
                 <option value="pilot">Pilot</option>
                 <option value="transition">Transition</option>
+              </select>
+            </label>
+
+            <label style={{ display: 'block' }}>
+              <span className="text-overline-muted" style={{ display: 'block', marginBottom: 6 }}>Status</span>
+              <select
+                value={status}
+                onChange={(e) => setStatus(e.target.value as any)}
+                style={INPUT}
+              >
+                <option value="planned">Planned</option>
+                <option value="active">Active</option>
+                <option value="paused">Paused</option>
+                <option value="completed">Completed</option>
+                <option value="cancelled">Cancelled</option>
               </select>
             </label>
 
@@ -252,7 +297,7 @@ export const CreateInitiativeModal: React.FC<Props> = ({ onClose, onCreated }) =
                 borderRadius: 10, color: '#fff', cursor: saving || !name.trim() ? 'not-allowed' : 'pointer',
               }}
             >
-              {saving ? 'Creating…' : 'Create initiative'}
+              {saving ? 'Saving…' : isEdit ? 'Save changes' : 'Create initiative'}
             </button>
           </div>
         </form>

@@ -1,15 +1,22 @@
 import React, { useState, useMemo } from 'react';
+import { useMutation } from 'convex/react';
+import { api } from '../../convex/_generated/api';
 import { useTrackerData } from '../lib/useTrackerData';
 import { PageHeader, Panel, HealthPill } from '../components/shell/PageHeader';
 import { LoadingPanel } from './DashboardView';
 import { pct } from '../lib/health';
-import { Store as StoreIcon } from 'lucide-react';
+import { Store as StoreIcon, Plus, Pencil, Trash2 } from 'lucide-react';
 import type { ViewId } from '../App';
+import { StoreEditModal } from '../components/StoreEditModal';
+import type { StoreRecord } from '../components/StoreEditModal';
 
 export const StoresView: React.FC<{ search?: string; onNavigate?: (v: ViewId, params?: any) => void }> = ({ search = '', onNavigate }) => {
   const { loading, stores, rollouts } = useTrackerData();
+  const removeStore = useMutation(api.stores.remove);
   const [regionFilter, setRegionFilter] = useState('all');
   const [formatFilter, setFormatFilter] = useState('all');
+  const [editStore, setEditStore] = useState<StoreRecord | null | undefined>(undefined); // undefined = closed, null = create
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
   const regions = useMemo(() => Array.from(new Set(stores.map((s) => s.region).filter(Boolean))).sort(), [stores]);
   const formats = useMemo(() => Array.from(new Set(stores.map((s) => s.storeFormat).filter(Boolean))).sort(), [stores]);
@@ -28,12 +35,22 @@ export const StoresView: React.FC<{ search?: string; onNavigate?: (v: ViewId, pa
 
   if (loading) return <LoadingPanel />;
 
+  const handleDelete = async (id: string) => {
+    await removeStore({ id: id as any });
+    setConfirmDelete(null);
+  };
+
   return (
     <>
       <PageHeader
         overline="Stores · Master Data"
         title="All stores"
         subtitle={`${filtered.length} of ${stores.length} stores · click a row to deep-dive`}
+        actions={
+          <button className="btn-primary" onClick={() => setEditStore(null)}>
+            <Plus size={14} /> Add store
+          </button>
+        }
       />
 
       <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
@@ -57,6 +74,7 @@ export const StoresView: React.FC<{ search?: string; onNavigate?: (v: ViewId, pa
                 <th>Merrychef</th>
                 <th>Active Rollouts</th>
                 <th>Health</th>
+                <th style={{ width: 80 }}></th>
               </tr>
             </thead>
             <tbody>
@@ -78,6 +96,36 @@ export const StoresView: React.FC<{ search?: string; onNavigate?: (v: ViewId, pa
                     <td style={{ color: 'var(--text-secondary)' }}>{s.merrychefType}</td>
                     <td className="font-mono-value" style={{ fontWeight: 700 }}>{cells.length}</td>
                     <td>{cells.length > 0 ? <HealthPill health={overall as any} /> : <span className="text-overline-muted">—</span>}</td>
+                    <td onClick={(e) => e.stopPropagation()} style={{ whiteSpace: 'nowrap' }}>
+                      <button
+                        className="btn-ghost"
+                        title="Edit store"
+                        style={{ padding: '4px 6px', marginRight: 2 }}
+                        onClick={() => setEditStore(s as StoreRecord)}
+                      >
+                        <Pencil size={12} />
+                      </button>
+                      {confirmDelete === s._id ? (
+                        <>
+                          <button
+                            style={{ padding: '4px 8px', fontSize: 11, background: '#EF4444', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', marginRight: 2 }}
+                            onClick={() => handleDelete(s._id)}
+                          >
+                            Confirm
+                          </button>
+                          <button className="btn-ghost" style={{ padding: '4px 6px', fontSize: 11 }} onClick={() => setConfirmDelete(null)}>✕</button>
+                        </>
+                      ) : (
+                        <button
+                          className="btn-ghost"
+                          title="Deactivate store"
+                          style={{ padding: '4px 6px', color: 'var(--text-muted)' }}
+                          onClick={() => setConfirmDelete(s._id)}
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                      )}
+                    </td>
                   </tr>
                 );
               })}
@@ -85,6 +133,15 @@ export const StoresView: React.FC<{ search?: string; onNavigate?: (v: ViewId, pa
           </table>
         </div>
       </Panel>
+
+      {/* Edit / create modal */}
+      {editStore !== undefined && (
+        <StoreEditModal
+          store={editStore}
+          onClose={() => setEditStore(undefined)}
+          onSaved={() => setEditStore(undefined)}
+        />
+      )}
     </>
   );
 };

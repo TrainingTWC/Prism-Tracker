@@ -51,3 +51,41 @@ export const upsert = mutation({
     return await ctx.db.insert("stores", { ...args, active: true });
   },
 });
+
+/** Update every field of an existing store by its Convex ID. */
+export const update = mutation({
+  args: {
+    id: v.id("stores"),
+    storeCode: v.string(),
+    storeName: v.string(),
+    areaManager: v.string(),
+    region: v.string(),
+    city: v.string(),
+    storeFormat: v.string(),
+    menuType: v.string(),
+    coffeeMachine: v.string(),
+    merrychefType: v.string(),
+    active: v.boolean(),
+  },
+  handler: async (ctx, { id, ...fields }) => {
+    await ctx.db.patch(id, fields);
+  },
+});
+
+/** Soft-delete a store (sets active = false). */
+export const remove = mutation({
+  args: { id: v.id("stores") },
+  handler: async (ctx, { id }) => {
+    await ctx.db.patch(id, { active: false });
+  },
+});
+
+/** List ALL stores including inactive — used by admin views. */
+export const listAll = query({
+  args: {},
+  handler: async (ctx) => {
+    return (await ctx.db.query("stores").collect()).sort((a, b) =>
+      a.storeCode.localeCompare(b.storeCode),
+    );
+  },
+});

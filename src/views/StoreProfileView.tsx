@@ -1,13 +1,19 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useTrackerData } from '../lib/useTrackerData';
 import { PageHeader, Panel, HealthPill, KpiTile, EmptyState } from '../components/shell/PageHeader';
 import { LoadingPanel } from './DashboardView';
 import { fmtDate, pct, STATUS_LABEL } from '../lib/health';
-import { Store as StoreIcon, ArrowLeft } from 'lucide-react';
+import { Store as StoreIcon, ArrowLeft, Pencil } from 'lucide-react';
 import type { ViewId } from '../App';
+import { StoreEditModal } from '../components/StoreEditModal';
+import type { StoreRecord } from '../components/StoreEditModal';
+import { RolloutEditModal } from '../components/RolloutEditModal';
+import type { RolloutRecord } from '../components/RolloutEditModal';
 
 export const StoreProfileView: React.FC<{ storeId?: string; onNavigate: (v: ViewId, p?: any) => void }> = ({ storeId, onNavigate }) => {
   const { loading, stores, rollouts, initiatives } = useTrackerData();
+  const [editingStore, setEditingStore] = useState(false);
+  const [editRollout, setEditRollout] = useState<RolloutRecord | null>(null);
   if (loading) return <LoadingPanel />;
   const store = stores.find((s) => s._id === storeId);
   if (!store) return <EmptyState icon={<StoreIcon size={20} />} title="Store not found" />;
@@ -27,6 +33,11 @@ export const StoreProfileView: React.FC<{ storeId?: string; onNavigate: (v: View
         overline={`Store · ${store.storeCode}`}
         title={store.storeName}
         subtitle={`${store.city} · ${store.region} · Area manager: ${store.areaManager || '—'}`}
+        actions={
+          <button className="btn-ghost" onClick={() => setEditingStore(true)}>
+            <Pencil size={13} /> Edit store
+          </button>
+        }
       />
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, marginBottom: 24 }}>
@@ -54,6 +65,7 @@ export const StoreProfileView: React.FC<{ storeId?: string; onNavigate: (v: View
                 <th>Status</th>
                 <th>Planned end</th>
                 <th>Health</th>
+                <th style={{ width: 44 }}></th>
               </tr>
             </thead>
             <tbody>
@@ -65,6 +77,16 @@ export const StoreProfileView: React.FC<{ storeId?: string; onNavigate: (v: View
                     <td style={{ color: 'var(--text-secondary)' }}>{STATUS_LABEL[r.status] || r.status}</td>
                     <td className="font-mono-value">{fmtDate(r.plannedEnd)}</td>
                     <td>{r.participating ? <HealthPill health={r.health} /> : <span className="text-overline-muted">N/A</span>}</td>
+                    <td>
+                      <button
+                        className="btn-ghost"
+                        title="Edit rollout"
+                        style={{ padding: '3px 5px' }}
+                        onClick={() => setEditRollout(r as unknown as RolloutRecord)}
+                      >
+                        <Pencil size={11} />
+                      </button>
+                    </td>
                   </tr>
                 );
               })}
@@ -72,6 +94,27 @@ export const StoreProfileView: React.FC<{ storeId?: string; onNavigate: (v: View
           </table>
         </Panel>
       </div>
+
+      {editingStore && (
+        <StoreEditModal
+          store={store as unknown as StoreRecord}
+          onClose={() => setEditingStore(false)}
+          onSaved={() => setEditingStore(false)}
+        />
+      )}
+
+      {editRollout && (() => {
+        const init = initiatives.find((i) => i._id === editRollout.initiativeId);
+        return (
+          <RolloutEditModal
+            rollout={editRollout}
+            initiativeName={init?.name || ''}
+            storeName={store.storeName}
+            onClose={() => setEditRollout(null)}
+            onSaved={() => setEditRollout(null)}
+          />
+        );
+      })()}
     </>
   );
 };
