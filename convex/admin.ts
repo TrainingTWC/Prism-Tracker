@@ -1,3 +1,4 @@
+import { getAuthUserId } from "@convex-dev/auth/server";
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 
@@ -32,8 +33,8 @@ export const setUserRole = mutation({
 export const claimSuperAdmin = mutation({
   args: { email: v.string(), name: v.string() },
   handler: async (ctx, { email, name }) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
 
     const allProfiles = await ctx.db.query("profiles").collect();
     const alreadyHasSuperAdmin = allProfiles.some(
@@ -48,9 +49,8 @@ export const claimSuperAdmin = mutation({
     if (existing) {
       await ctx.db.patch(existing._id, { role: "super_admin" as any });
     } else {
-      // subject is the users table _id per @convex-dev/auth convention
       await ctx.db.insert("profiles", {
-        userId: identity.subject as any,
+        userId,
         name: name || email.split("@")[0],
         email,
         role: "super_admin" as any,
