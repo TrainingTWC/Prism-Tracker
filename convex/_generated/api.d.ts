@@ -8,11 +8,13 @@
  * @module
  */
 
+import type * as admin from "../admin.js";
 import type * as auth from "../auth.js";
 import type * as cleanup from "../cleanup.js";
 import type * as delayCategories from "../delayCategories.js";
 import type * as http from "../http.js";
 import type * as import_ from "../import.js";
+import type * as importSheets from "../importSheets.js";
 import type * as initiatives from "../initiatives.js";
 import type * as rollouts from "../rollouts.js";
 import type * as seed from "../seed.js";
@@ -28,11 +30,13 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  admin: typeof admin;
   auth: typeof auth;
   cleanup: typeof cleanup;
   delayCategories: typeof delayCategories;
   http: typeof http;
   import: typeof import_;
+  importSheets: typeof importSheets;
   initiatives: typeof initiatives;
   rollouts: typeof rollouts;
   seed: typeof seed;
