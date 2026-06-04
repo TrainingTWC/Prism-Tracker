@@ -27,11 +27,14 @@ export const setUserRole = mutation({
 /**
  * Claim the Super Admin role.
  * Only succeeds when there are ZERO existing super_admins.
- * Creates or upgrades the caller's profile.
+ * Derives userId from the server-side auth context — never trusts client input.
  */
 export const claimSuperAdmin = mutation({
-  args: { email: v.string(), name: v.string(), userId: v.string() },
-  handler: async (ctx, { email, name, userId }) => {
+  args: { email: v.string(), name: v.string() },
+  handler: async (ctx, { email, name }) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Not authenticated");
+
     const allProfiles = await ctx.db.query("profiles").collect();
     const alreadyHasSuperAdmin = allProfiles.some(
       (p) => (p as any).role === "super_admin"
@@ -45,8 +48,9 @@ export const claimSuperAdmin = mutation({
     if (existing) {
       await ctx.db.patch(existing._id, { role: "super_admin" as any });
     } else {
+      // subject is the users table _id per @convex-dev/auth convention
       await ctx.db.insert("profiles", {
-        userId: userId as any,
+        userId: identity.subject as any,
         name: name || email.split("@")[0],
         email,
         role: "super_admin" as any,

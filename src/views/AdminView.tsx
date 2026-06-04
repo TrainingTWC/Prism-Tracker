@@ -139,7 +139,7 @@ export const AdminView: React.FC<{ user: any; onNavigate: (v: ViewId) => void }>
     setClaiming(true);
     try {
       await claimSuperAdminMut({
-        email: user.email, name: user.name || user.email, userId: user.id,
+        email: user.email, name: user.name || user.email,
       });
     } catch (e: any) { alert(e.message || 'Failed to claim Super Admin'); }
     finally { setClaiming(false); }
