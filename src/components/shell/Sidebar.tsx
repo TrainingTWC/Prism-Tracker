@@ -5,7 +5,7 @@ import {
   Sparkles, Truck,
   AlertTriangle, Clock, Bell, Users,
   Upload, Download, FileText, Settings,
-  Home, Shield,
+  Home, Shield, Building2, FolderKanban,
 } from 'lucide-react';
 import type { ViewId } from '../../App';
 
@@ -62,6 +62,13 @@ const SECTIONS: { label: string; items: { id: ViewId; label: string; icon: any }
       { id: 'import', label: 'Import', icon: Upload },
       { id: 'export', label: 'Export', icon: Download },
       { id: 'audit', label: 'Audit Log', icon: FileText },
+    ],
+  },
+  {
+    label: 'Projects',
+    items: [
+      { id: 'departments', label: 'Departments', icon: Building2 },
+      { id: 'projects', label: 'All Projects', icon: FolderKanban },
     ],
   },
   {

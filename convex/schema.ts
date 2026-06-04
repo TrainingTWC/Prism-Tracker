@@ -163,4 +163,65 @@ export default defineSchema({
       v.literal("failed"),
     ),
   }),
+
+  // ─── Project Tracking ───────────────────────────────────────────────────
+
+  departments: defineTable({
+    code: v.string(),           // e.g. "MKT", "OPS", "TECH"
+    name: v.string(),           // e.g. "Marketing", "Operations"
+    head: v.optional(v.string()),
+    description: v.optional(v.string()),
+    color: v.optional(v.string()),
+    active: v.boolean(),
+  })
+    .index("by_code", ["code"])
+    .index("by_active", ["active"]),
+
+  projects: defineTable({
+    departmentId: v.id("departments"),
+    title: v.string(),
+    description: v.optional(v.string()),
+    status: v.union(
+      v.literal("planned"),
+      v.literal("active"),
+      v.literal("on_hold"),
+      v.literal("completed"),
+      v.literal("cancelled"),
+    ),
+    priority: v.union(
+      v.literal("low"),
+      v.literal("medium"),
+      v.literal("high"),
+      v.literal("critical"),
+    ),
+    ownerEmail: v.optional(v.string()),
+    startDate: v.optional(v.number()),
+    endDate: v.optional(v.number()),
+  })
+    .index("by_department", ["departmentId"])
+    .index("by_status", ["status"])
+    .index("by_priority", ["priority"]),
+
+  tasks: defineTable({
+    projectId: v.id("projects"),
+    title: v.string(),
+    description: v.optional(v.string()),
+    status: v.union(
+      v.literal("todo"),
+      v.literal("in_progress"),
+      v.literal("review"),
+      v.literal("done"),
+    ),
+    priority: v.union(
+      v.literal("low"),
+      v.literal("medium"),
+      v.literal("high"),
+      v.literal("critical"),
+    ),
+    assignedTo: v.optional(v.string()),
+    dueDate: v.optional(v.number()),
+    completedAt: v.optional(v.number()),
+  })
+    .index("by_project", ["projectId"])
+    .index("by_status", ["status"]),
 });

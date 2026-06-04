@@ -35,6 +35,9 @@ import { ExportView } from './views/ExportView';
 import { AuditView } from './views/AuditView';
 import { SettingsView } from './views/SettingsView';
 import { AdminView } from './views/AdminView';
+import { DepartmentsView } from './views/DepartmentsView';
+import { ProjectsView } from './views/ProjectsView';
+import { ProjectDetailView } from './views/ProjectDetailView';
 
 export type ViewId =
   | 'home' | 'dashboard' | 'grid' | 'timeline' | 'calendar' | 'map'
@@ -42,11 +45,13 @@ export type ViewId =
   | 'initiatives' | 'initiative-page' | 'vendors'
   | 'snags' | 'delays' | 'alerts' | 'managers'
   | 'import' | 'export' | 'audit'
-  | 'settings' | 'admin';
+  | 'settings' | 'admin'
+  | 'departments' | 'projects' | 'project-detail';
 
 interface ViewParams {
   storeId?: string;
   initiativeId?: string;
+  projectId?: string;
 }
 
 const ROUTE_MAP: Record<string, ViewId> = {
@@ -56,6 +61,7 @@ const ROUTE_MAP: Record<string, ViewId> = {
   '/vendors': 'vendors', '/snags': 'snags', '/delays': 'delays',
   '/alerts': 'alerts', '/managers': 'managers', '/import': 'import',
   '/export': 'export', '/audit': 'audit', '/settings': 'settings', '/admin': 'admin',
+  '/departments': 'departments', '/projects': 'projects',
 };
 const VIEW_PATH: Record<ViewId, string> = {
   home: '/', dashboard: '/dashboard', grid: '/grid', timeline: '/timeline', calendar: '/calendar',
@@ -63,6 +69,7 @@ const VIEW_PATH: Record<ViewId, string> = {
   initiatives: '/initiatives', 'initiative-page': '/initiatives', vendors: '/vendors',
   snags: '/snags', delays: '/delays', alerts: '/alerts', managers: '/managers',
   import: '/import', export: '/export', audit: '/audit', settings: '/settings', admin: '/admin',
+  departments: '/departments', projects: '/projects', 'project-detail': '/projects',
 };
 
 function parseLocation(): { view: ViewId; params: ViewParams } {
@@ -73,6 +80,9 @@ function parseLocation(): { view: ViewId; params: ViewParams } {
   // /store/:id
   const storeMatch = path.match(/^\/store\/(.+)$/);
   if (storeMatch) return { view: 'store-profile', params: { storeId: storeMatch[1] } };
+  // /project/:id
+  const projectMatch = path.match(/^\/project\/(.+)$/);
+  if (projectMatch) return { view: 'project-detail', params: { projectId: projectMatch[1] } };
   const view = ROUTE_MAP[path] ?? 'home';
   return { view, params: {} };
 }
@@ -96,6 +106,7 @@ const MainApp: React.FC = () => {
     let path: string;
     if (v === 'initiative-page' && p.initiativeId) path = `/initiative/${p.initiativeId}`;
     else if (v === 'store-profile' && p.storeId) path = `/store/${p.storeId}`;
+    else if (v === 'project-detail' && p.projectId) path = `/project/${p.projectId}`;
     else path = VIEW_PATH[v] ?? '/';
     window.history.pushState({ v, p }, '', path);
     setLocation({ view: v, params: p });
@@ -168,6 +179,9 @@ const MainApp: React.FC = () => {
       case 'audit': return <AuditView />;
       case 'settings': return <SettingsView user={user} onSignOut={handleSignOut} />;
       case 'admin': return <AdminView user={user} onNavigate={navigate} />;
+      case 'departments': return <DepartmentsView />;
+      case 'projects': return <ProjectsView onNavigate={navigate} />;
+      case 'project-detail': return <ProjectDetailView projectId={params.projectId} onNavigate={navigate} />;
       default: return <HomeView onNavigate={navigate} />;
     }
   };
