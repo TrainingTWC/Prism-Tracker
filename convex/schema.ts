@@ -18,7 +18,7 @@ export default defineSchema({
     userId: v.id("users"),
     name: v.string(),
     email: v.string(),
-    role: v.union(v.literal("admin"), v.literal("editor"), v.literal("viewer")),
+    role: v.union(v.literal("admin"), v.literal("editor"), v.literal("viewer"), v.literal("super_admin")),
     region: v.optional(v.string()),
     color: v.optional(v.string()),
   })

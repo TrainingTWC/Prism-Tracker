@@ -34,6 +34,7 @@ import { ImportView } from './views/ImportView';
 import { ExportView } from './views/ExportView';
 import { AuditView } from './views/AuditView';
 import { SettingsView } from './views/SettingsView';
+import { AdminView } from './views/AdminView';
 
 export type ViewId =
   | 'home' | 'dashboard' | 'grid' | 'timeline' | 'calendar' | 'map'
@@ -41,7 +42,7 @@ export type ViewId =
   | 'initiatives' | 'initiative-page' | 'vendors'
   | 'snags' | 'delays' | 'alerts' | 'managers'
   | 'import' | 'export' | 'audit'
-  | 'settings';
+  | 'settings' | 'admin';
 
 interface ViewParams {
   storeId?: string;
@@ -54,14 +55,14 @@ const ROUTE_MAP: Record<string, ViewId> = {
   '/equipment': 'equipment', '/initiatives': 'initiatives',
   '/vendors': 'vendors', '/snags': 'snags', '/delays': 'delays',
   '/alerts': 'alerts', '/managers': 'managers', '/import': 'import',
-  '/export': 'export', '/audit': 'audit', '/settings': 'settings',
+  '/export': 'export', '/audit': 'audit', '/settings': 'settings', '/admin': 'admin',
 };
 const VIEW_PATH: Record<ViewId, string> = {
   home: '/', dashboard: '/dashboard', grid: '/grid', timeline: '/timeline', calendar: '/calendar',
   map: '/map', stores: '/stores', 'store-profile': '/stores', equipment: '/equipment',
   initiatives: '/initiatives', 'initiative-page': '/initiatives', vendors: '/vendors',
   snags: '/snags', delays: '/delays', alerts: '/alerts', managers: '/managers',
-  import: '/import', export: '/export', audit: '/audit', settings: '/settings',
+  import: '/import', export: '/export', audit: '/audit', settings: '/settings', admin: '/admin',
 };
 
 function parseLocation(): { view: ViewId; params: ViewParams } {
@@ -166,6 +167,7 @@ const MainApp: React.FC = () => {
       case 'export': return <ExportView />;
       case 'audit': return <AuditView />;
       case 'settings': return <SettingsView user={user} onSignOut={handleSignOut} />;
+      case 'admin': return <AdminView user={user} onNavigate={navigate} />;
       default: return <HomeView onNavigate={navigate} />;
     }
   };

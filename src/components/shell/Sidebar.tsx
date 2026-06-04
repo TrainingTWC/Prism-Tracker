@@ -5,14 +5,14 @@ import {
   Sparkles, Truck,
   AlertTriangle, Clock, Bell, Users,
   Upload, Download, FileText, Settings,
-  Home,
+  Home, Shield,
 } from 'lucide-react';
 import type { ViewId } from '../../App';
 
 interface SidebarProps {
   active: ViewId;
   onNavigate: (v: ViewId) => void;
-  user: { email?: string; name?: string } | null;
+  user: { email?: string; name?: string; role?: string } | null;
   estateHealthPct?: number;
 }
 
@@ -68,6 +68,12 @@ const SECTIONS: { label: string; items: { id: ViewId; label: string; icon: any }
     label: 'Workspace',
     items: [
       { id: 'settings', label: 'Settings', icon: Settings },
+    ],
+  },
+  {
+    label: 'Admin',
+    items: [
+      { id: 'admin', label: 'Admin Panel', icon: Shield },
     ],
   },
 ];
