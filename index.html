@@ -13,8 +13,14 @@
     />
     <style>
       html, body { background: #09090B; margin: 0; }
+      html[data-theme="light"], html[data-theme="light"] body { background: #FFFFFF; }
     </style>
     <script>
+      // Apply saved theme before React renders to prevent flash of wrong theme.
+      (function() {
+        var t = localStorage.getItem('prism-theme');
+        if (t === 'light') document.documentElement.dataset.theme = 'light';
+      })();
       // Restore path saved by 404.html SPA fallback (GitHub Pages trick).
       (function() {
         var redirect = sessionStorage.getItem('spa_redirect');

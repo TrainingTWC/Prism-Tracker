@@ -124,7 +124,13 @@ export const syncFromIntelligence = internalAction({
       console.error("[employees] Unexpected response shape — expected array");
       return;
     }
-    await ctx.runMutation(internal.employees.upsertBatch, { employees: data });
+    // Process in batches of 100 to stay within Convex document-write limits
+    const BATCH = 100;
+    for (let i = 0; i < data.length; i += BATCH) {
+      await ctx.runMutation(internal.employees.upsertBatch, {
+        employees: data.slice(i, i + BATCH),
+      });
+    }
     console.log(`[employees] Synced ${data.length} employees from Intelligence`);
   },
 });

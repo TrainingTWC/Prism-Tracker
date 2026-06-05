@@ -95,6 +95,16 @@ const MainApp: React.FC = () => {
   const [{ view, params }, setLocation] = useState(parseLocation);
   const [search, setSearch] = useState('');
 
+  // ── Theme ────────────────────────────────────────────────────────────────
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
+    return (localStorage.getItem('prism-theme') as 'dark' | 'light') || 'dark';
+  });
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    localStorage.setItem('prism-theme', theme);
+  }, [theme]);
+  const toggleTheme = useCallback(() => setTheme(t => t === 'dark' ? 'light' : 'dark'), []);
+
   // Listen to browser back/forward
   useEffect(() => {
     const handler = () => setLocation(parseLocation());
@@ -202,6 +212,8 @@ const MainApp: React.FC = () => {
           onSignOut={handleSignOut}
           search={search}
           onSearch={setSearch}
+          theme={theme}
+          onToggleTheme={toggleTheme}
         />
       }
     >
