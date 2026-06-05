@@ -99,6 +99,14 @@
               0 8px 28px rgba(0,0,0,0.10);
 }
 
+/* Product images: multiply removes white bg in light mode; screen removes dark bg in dark mode */
+.product-img {
+  mix-blend-mode: multiply;
+}
+[data-theme="dark"] .product-img {
+  mix-blend-mode: screen;
+}
+
 html, body, #root {
   background: var(--bg-primary);
   color: var(--text-primary);

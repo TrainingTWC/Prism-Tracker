@@ -253,6 +253,43 @@ export const InitiativePageView: React.FC<{ initiativeId?: string; onNavigate: (
         subtitle={`${init.vendor ? `Vendor: ${init.vendor} · ` : ''}${fmtDate(init.plannedStart)} → ${fmtDate(init.plannedEnd)}`}
       />
 
+      {/* Product image — blended so supplier images (white bg) appear transparent */}
+      {(init as any).imageUrl && (
+        <div style={{
+          marginBottom: 20,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 24,
+        }}>
+          <div style={{
+            width: 160, height: 160, flexShrink: 0,
+            borderRadius: 16,
+            border: '1px solid var(--border-subtle)',
+            background: '#ffffff',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            overflow: 'hidden',
+          }}>
+            <img
+              src={(init as any).imageUrl}
+              alt={init.name}
+              className="product-img"
+              style={{
+                width: '100%', height: '100%',
+                objectFit: 'contain',
+              }}
+            />
+          </div>
+          {(init as any).productCategory && (
+            <div>
+              <p className="text-overline-muted" style={{ marginBottom: 4 }}>Category</p>
+              <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>
+                {(init as any).productCategory}
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, marginBottom: 24 }}>
         <KpiTile label="Participating" value={cells.length} color="var(--signal-500)" />
         <KpiTile label="On track" value={`${pct(g, cells.length)}%`} color="#22C55E" />

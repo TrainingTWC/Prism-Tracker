@@ -38,6 +38,7 @@ const initiativeFields = {
     v.literal("cancelled"),
   ),
   productCategory: v.optional(v.string()),
+  imageUrl: v.optional(v.string()),
   variants: v.array(v.string()),
   regions: v.array(v.string()),
   cities: v.array(v.string()),

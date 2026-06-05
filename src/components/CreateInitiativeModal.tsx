@@ -15,6 +15,7 @@ export interface ExistingInitiative {
   status: 'planned' | 'active' | 'completed' | 'paused' | 'cancelled';
   vendor?: string;
   productCategory?: string;
+  imageUrl?: string;
   plannedStart: number;
   plannedEnd?: number;
   regions: string[];
@@ -56,6 +57,7 @@ export const CreateInitiativeModal: React.FC<Props> = ({ onClose, onCreated, exi
   const [status, setStatus] = useState<'planned' | 'active' | 'completed' | 'paused' | 'cancelled'>(existing?.status ?? 'planned');
   const [vendor, setVendor] = useState(existing?.vendor ?? '');
   const [productCategory, setProductCategory] = useState(existing?.productCategory ?? '');
+  const [imageUrl, setImageUrl] = useState(existing?.imageUrl ?? '');
   const [plannedStart, setPlannedStart] = useState(toDateStr(existing?.plannedStart));
   const [plannedEnd, setPlannedEnd] = useState(toDateStr(existing?.plannedEnd));
   const [selectedRegions, setSelectedRegions] = useState<string[]>(existing?.regions ?? []);
@@ -83,6 +85,7 @@ export const CreateInitiativeModal: React.FC<Props> = ({ onClose, onCreated, exi
         status,
         vendor: vendor.trim() || undefined,
         productCategory: productCategory.trim() || undefined,
+        imageUrl: imageUrl.trim() || undefined,
         variants: existing?.variants ?? [],
         regions: selectedRegions,
         cities: existing?.cities ?? [],
@@ -227,17 +230,29 @@ export const CreateInitiativeModal: React.FC<Props> = ({ onClose, onCreated, exi
             </label>
           </div>
 
-          {/* Product category */}
-          <label style={{ display: 'block', marginBottom: 16 }}>
-            <span className="text-overline-muted" style={{ display: 'block', marginBottom: 6 }}>Product category</span>
-            <input
-              type="text"
-              value={productCategory}
-              onChange={(e) => setProductCategory(e.target.value)}
-              placeholder="e.g. Beverages, Food, Equipment…"
-              style={INPUT}
-            />
-          </label>
+          {/* Product category + image URL */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 16 }}>
+            <label style={{ display: 'block' }}>
+              <span className="text-overline-muted" style={{ display: 'block', marginBottom: 6 }}>Product category</span>
+              <input
+                type="text"
+                value={productCategory}
+                onChange={(e) => setProductCategory(e.target.value)}
+                placeholder="e.g. Beverages, Food…"
+                style={INPUT}
+              />
+            </label>
+            <label style={{ display: 'block' }}>
+              <span className="text-overline-muted" style={{ display: 'block', marginBottom: 6 }}>Product image URL</span>
+              <input
+                type="url"
+                value={imageUrl}
+                onChange={(e) => setImageUrl(e.target.value)}
+                placeholder="https://…"
+                style={INPUT}
+              />
+            </label>
+          </div>
 
           {/* Regions */}
           <div style={{ marginBottom: 16 }}>
